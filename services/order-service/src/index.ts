@@ -11,10 +11,12 @@ import {
   startHeartbeat,
   stopHeartbeat,
   closeNatsClient,
+  createLogger,
 } from '@microservices/shared';
 import { orderRoutes } from './routes/order.routes';
 import * as orderService from './services/order.service';
 
+const logger = createLogger(SERVICES.ORDER);
 const app = express();
 app.use(express.json({ limit: '1mb' }));
 
@@ -43,28 +45,33 @@ async function start() {
       url: process.env.NATS_URL || 'nats://nats:4222',
       name: SERVICES.ORDER,
       onStatusChange: (type, data) => {
-        console.log(`[${SERVICES.ORDER}] NATS status: ${type}`, data);
+        logger.info({ type, data }, 'NATS status change');
       },
     });
 
     startHeartbeat(SERVICES.ORDER, `http://${SERVICES.ORDER}:${PORTS.ORDER}`);
 
     app.listen(PORTS.ORDER, () => {
-      console.log(`${SERVICES.ORDER} running on port ${PORTS.ORDER}`);
+      logger.info({ port: PORTS.ORDER }, `${SERVICES.ORDER} running`);
     });
   } catch (err) {
-    console.error(`Failed to start ${SERVICES.ORDER}:`, err);
+    logger.fatal({ err }, `Failed to start ${SERVICES.ORDER}`);
     process.exit(1);
   }
 }
 
 const shutdown = async () => {
-  console.log(`Shutting down ${SERVICES.ORDER}...`);
-  stopHeartbeat();
-  await closeNatsClient();
-  await shutdownTelemetry();
-  await orderService.prisma.$disconnect();
-  process.exit(0);
+  logger.info('Shutting down...');
+  const forceExit = setTimeout(() => process.exit(1), 10000);
+  try {
+    stopHeartbeat();
+    await closeNatsClient();
+    await shutdownTelemetry();
+    await orderService.prisma.$disconnect();
+  } finally {
+    clearTimeout(forceExit);
+    process.exit(0);
+  }
 };
 
 process.on('SIGTERM', shutdown);
