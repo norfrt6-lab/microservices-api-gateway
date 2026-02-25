@@ -1,0 +1,35 @@
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+COPY package.json ./
+COPY shared/package.json ./shared/
+COPY gateway/package.json ./gateway/
+
+RUN npm install --workspace=shared --workspace=gateway
+
+COPY shared/ ./shared/
+COPY gateway/ ./gateway/
+COPY tsconfig.base.json ./
+
+RUN npm run build --workspace=shared && npm run build --workspace=gateway
+
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/shared/package.json ./shared/
+COPY --from=builder /app/gateway/package.json ./gateway/
+
+RUN npm install --workspace=shared --workspace=gateway --omit=dev
+
+COPY --from=builder /app/shared/dist/ ./shared/dist/
+COPY --from=builder /app/gateway/dist/ ./gateway/dist/
+
+EXPOSE 3000
+
+HEALTHCHECK --interval=10s --timeout=5s --start-period=15s --retries=3 \
+  CMD wget -qO- http://localhost:3000/health/live || exit 1
+
+CMD ["node", "gateway/dist/index.js"]
