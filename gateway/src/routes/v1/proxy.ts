@@ -1,9 +1,10 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { createProxyMiddleware, Options } from 'http-proxy-middleware';
-import { getRouteConfig, routeMap } from '../../config/routes.config';
+import { routeMap } from '../../config/routes.config';
 import { HEADERS } from '@microservices/shared';
 import { config } from '../../config';
 import { logger } from '../../config/logger';
+import { authenticate } from '../../middleware/auth';
 import { NotFoundError } from '../../utils/errors';
 
 export function createProxyRouter(version: string): Router {
@@ -34,11 +35,19 @@ export function createProxyRouter(version: string): Router {
           // Inject gateway secret so services know request came from gateway
           proxyReq.setHeader(HEADERS.GATEWAY_SECRET, config.gatewaySecret);
 
+          // Forward authenticated user info to downstream service
+          if (expressReq.user) {
+            proxyReq.setHeader('x-user-id', expressReq.user.userId);
+            proxyReq.setHeader('x-user-email', expressReq.user.email);
+            proxyReq.setHeader('x-user-role', expressReq.user.role);
+          }
+
           logger.debug(
             {
               correlationId: expressReq.correlationId,
               target: route.target,
               path: expressReq.path,
+              userId: expressReq.user?.userId,
             },
             `Proxying request to ${route.target}`,
           );
@@ -81,8 +90,19 @@ export function createProxyRouter(version: string): Router {
       },
     };
 
-    router.use(route.prefix, createProxyMiddleware(proxyOptions));
-    logger.info(`Route mounted: /api/${version}${route.prefix} → ${route.target}`);
+    // Build middleware chain: auth (if required) → proxy
+    const middlewares: any[] = [];
+
+    if (route.auth) {
+      middlewares.push(authenticate);
+    }
+
+    middlewares.push(createProxyMiddleware(proxyOptions));
+
+    router.use(route.prefix, ...middlewares);
+    logger.info(
+      `Route mounted: /api/${version}${route.prefix} → ${route.target} [auth=${route.auth}]`,
+    );
   }
 
   // Catch unmatched routes within the version namespace
