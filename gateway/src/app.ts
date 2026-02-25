@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import { requestIdMiddleware } from './middleware/requestId';
 import { httpLogger } from './middleware/logger';
 import { errorHandler } from './middleware/errorHandler';
+import { router } from './routes';
 import { sendSuccess } from './utils/response';
 import { NotFoundError } from './utils/errors';
 
@@ -34,7 +35,8 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API routes will be mounted here by feat/proxy-routing
+// Versioned API proxy routes
+app.use(router);
 
 // 404 catch-all
 app.use((req, _res, next) => {
