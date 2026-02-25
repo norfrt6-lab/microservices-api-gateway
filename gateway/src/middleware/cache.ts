@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { getRedisClient } from '../services/redis';
 import { logger } from '../config/logger';
+import { cacheHitsTotal, cacheMissesTotal } from '../telemetry/meter';
 
 const DEFAULT_TTL = 60; // 60 seconds
 
@@ -49,6 +50,7 @@ export function cacheMiddleware(options: CacheOptions = {}) {
       const cached = await redis.get(key);
 
       if (cached) {
+        cacheHitsTotal.inc();
         logger.debug({ correlationId: req.correlationId, key }, 'Cache hit');
 
         const parsed = JSON.parse(cached);
@@ -57,6 +59,7 @@ export function cacheMiddleware(options: CacheOptions = {}) {
         return res.status(parsed.statusCode || 200).json(parsed.body);
       }
 
+      cacheMissesTotal.inc();
       logger.debug({ correlationId: req.correlationId, key }, 'Cache miss');
       res.setHeader('X-Cache', 'MISS');
 

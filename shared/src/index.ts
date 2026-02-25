@@ -5,3 +5,4 @@ export * from './utils';
 export * from './middleware/gatewayGuard';
 export * from './nats';
 export { initTelemetry, getMetricsRegister, shutdownTelemetry } from './telemetry/init';
+export { createLogger } from './logger';

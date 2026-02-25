@@ -3,6 +3,7 @@ import { getRedisClient } from '../services/redis';
 import { config } from '../config';
 import { logger } from '../config/logger';
 import { TooManyRequestsError } from '../utils/errors';
+import { rateLimitHitsTotal } from '../telemetry/meter';
 
 /**
  * Lua script for atomic token bucket rate limiting.
@@ -84,6 +85,7 @@ export async function rateLimiter(req: Request, res: Response, next: NextFunctio
 
     if (!allowed) {
       res.setHeader('Retry-After', retryAfter);
+      rateLimitHitsTotal.inc({ tier: req.user ? 'authenticated' : 'anonymous' });
       logger.warn(
         { correlationId: req.correlationId, key, retryAfter },
         'Rate limit exceeded',
