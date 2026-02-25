@@ -1,3 +1,5 @@
+// OTel tracer must be imported before other modules for auto-instrumentation
+import './telemetry/tracer';
 import { app } from './app';
 import { config } from './config';
 import { logger } from './config/logger';
