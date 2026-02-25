@@ -7,6 +7,7 @@ import { errorHandler } from './middleware/errorHandler';
 import { router } from './routes';
 import { healthRouter } from './routes/health';
 import { rateLimiter } from './middleware/rateLimiter';
+import { cacheMiddleware, cacheInvalidator } from './middleware/cache';
 import { NotFoundError } from './utils/errors';
 import { config } from './config';
 
@@ -65,6 +66,10 @@ app.use(healthRouter);
 
 // Rate limiting (after health, before proxy routes)
 app.use('/api', rateLimiter);
+
+// Response caching (GET) + cache invalidation (POST/PUT/PATCH/DELETE)
+app.use('/api', cacheMiddleware({ ttl: 60 }));
+app.use('/api', cacheInvalidator());
 
 // Versioned API proxy routes
 app.use(router);
