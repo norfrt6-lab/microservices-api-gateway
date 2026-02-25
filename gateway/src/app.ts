@@ -6,6 +6,7 @@ import { httpLogger } from './middleware/logger';
 import { errorHandler } from './middleware/errorHandler';
 import { router } from './routes';
 import { healthRouter } from './routes/health';
+import { rateLimiter } from './middleware/rateLimiter';
 import { NotFoundError } from './utils/errors';
 import { config } from './config';
 
@@ -59,8 +60,11 @@ app.use(requestIdMiddleware);
 // Structured logging
 app.use(httpLogger);
 
-// Health endpoints (before proxy routes — not proxied)
+// Health endpoints (before rate limiter — not rate limited)
 app.use(healthRouter);
+
+// Rate limiting (after health, before proxy routes)
+app.use('/api', rateLimiter);
 
 // Versioned API proxy routes
 app.use(router);
