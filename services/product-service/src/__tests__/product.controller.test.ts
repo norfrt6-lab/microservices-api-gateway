@@ -1,0 +1,197 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { create, getById, list, update, remove } from '../controllers/product.controller';
+
+vi.mock('../services/product.service', () => ({
+  createProduct: vi.fn(),
+  getProductById: vi.fn(),
+  listProducts: vi.fn(),
+  updateProduct: vi.fn(),
+  deleteProduct: vi.fn(),
+}));
+
+import * as productService from '../services/product.service';
+
+function createMockRes() {
+  const res: any = {
+    status: vi.fn().mockReturnThis(),
+    json: vi.fn().mockReturnThis(),
+  };
+  return res;
+}
+
+describe('product controller', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('create', () => {
+    it('should return 201 on successful creation', async () => {
+      const mockProduct = { id: 'p1', name: 'Widget', price: 29.99, stock: 10 };
+      vi.mocked(productService.createProduct).mockResolvedValue(mockProduct as any);
+
+      const req: any = { body: { name: 'Widget', price: 29.99, stock: 10 } };
+      const res = createMockRes();
+
+      await create(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res.json).toHaveBeenCalledWith({ success: true, data: mockProduct });
+    });
+
+    it('should return 400 on invalid body', async () => {
+      const req: any = { body: { name: '', price: -1, stock: -5 } };
+      const res = createMockRes();
+
+      await create(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+    });
+  });
+
+  describe('getById', () => {
+    it('should return product by ID', async () => {
+      const mockProduct = { id: '550e8400-e29b-41d4-a716-446655440000', name: 'Widget' };
+      vi.mocked(productService.getProductById).mockResolvedValue(mockProduct as any);
+
+      const req: any = { params: { id: '550e8400-e29b-41d4-a716-446655440000' } };
+      const res = createMockRes();
+
+      await getById(req, res);
+
+      expect(res.json).toHaveBeenCalledWith({ success: true, data: mockProduct });
+    });
+
+    it('should return 404 when product not found', async () => {
+      vi.mocked(productService.getProductById).mockRejectedValue(new Error('Product not found'));
+
+      const req: any = { params: { id: '550e8400-e29b-41d4-a716-446655440000' } };
+      const res = createMockRes();
+
+      await getById(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(404);
+    });
+
+    it('should return 400 on invalid ID format', async () => {
+      const req: any = { params: { id: 'not-a-uuid' } };
+      const res = createMockRes();
+
+      await getById(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+    });
+  });
+
+  describe('list', () => {
+    it('should return paginated products', async () => {
+      const mockResult = { products: [], total: 0, page: 1, limit: 20 };
+      vi.mocked(productService.listProducts).mockResolvedValue(mockResult);
+
+      const req: any = { query: {} };
+      const res = createMockRes();
+
+      await list(req, res);
+
+      expect(res.json).toHaveBeenCalledWith({
+        success: true,
+        data: [],
+        meta: { page: 1, limit: 20, total: 0 },
+      });
+    });
+
+    it('should pass search parameter', async () => {
+      const mockResult = { products: [], total: 0, page: 1, limit: 20 };
+      vi.mocked(productService.listProducts).mockResolvedValue(mockResult);
+
+      const req: any = { query: { search: 'widget' } };
+      const res = createMockRes();
+
+      await list(req, res);
+
+      expect(productService.listProducts).toHaveBeenCalledWith(1, 20, 'widget');
+    });
+  });
+
+  describe('update', () => {
+    it('should return updated product', async () => {
+      const mockProduct = { id: '550e8400-e29b-41d4-a716-446655440000', name: 'Updated', version: 2 };
+      vi.mocked(productService.updateProduct).mockResolvedValue(mockProduct as any);
+
+      const req: any = {
+        params: { id: '550e8400-e29b-41d4-a716-446655440000' },
+        body: { name: 'Updated' },
+        headers: { 'x-expected-version': '1' },
+      };
+      const res = createMockRes();
+
+      await update(req, res);
+
+      expect(productService.updateProduct).toHaveBeenCalledWith(
+        '550e8400-e29b-41d4-a716-446655440000',
+        { name: 'Updated' },
+        1,
+      );
+      expect(res.json).toHaveBeenCalledWith({ success: true, data: mockProduct });
+    });
+
+    it('should return 409 on version conflict', async () => {
+      vi.mocked(productService.updateProduct).mockRejectedValue(
+        new Error('Version conflict — product was modified by another request'),
+      );
+
+      const req: any = {
+        params: { id: '550e8400-e29b-41d4-a716-446655440000' },
+        body: { name: 'Updated' },
+        headers: { 'x-expected-version': '1' },
+      };
+      const res = createMockRes();
+
+      await update(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(409);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        success: false,
+        error: expect.objectContaining({ code: 'CONFLICT' }),
+      }));
+    });
+
+    it('should return 404 when product not found', async () => {
+      vi.mocked(productService.updateProduct).mockRejectedValue(new Error('Product not found'));
+
+      const req: any = {
+        params: { id: '550e8400-e29b-41d4-a716-446655440000' },
+        body: { name: 'Updated' },
+        headers: {},
+      };
+      const res = createMockRes();
+
+      await update(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(404);
+    });
+  });
+
+  describe('remove', () => {
+    it('should return success on delete', async () => {
+      vi.mocked(productService.deleteProduct).mockResolvedValue(undefined);
+
+      const req: any = { params: { id: '550e8400-e29b-41d4-a716-446655440000' } };
+      const res = createMockRes();
+
+      await remove(req, res);
+
+      expect(res.json).toHaveBeenCalledWith({ success: true, data: { message: 'Product deleted' } });
+    });
+
+    it('should return 404 when product not found', async () => {
+      vi.mocked(productService.deleteProduct).mockRejectedValue(new Error('Product not found'));
+
+      const req: any = { params: { id: '550e8400-e29b-41d4-a716-446655440000' } };
+      const res = createMockRes();
+
+      await remove(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(404);
+    });
+  });
+});
