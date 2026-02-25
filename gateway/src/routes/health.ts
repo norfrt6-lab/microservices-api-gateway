@@ -3,6 +3,7 @@ import { GatewayHealth, ServiceHealth } from '@microservices/shared';
 import { config } from '../config';
 import { isRedisHealthy } from '../services/redis';
 import { isNatsHealthy } from '../services/nats';
+import { circuitBreaker } from '../middleware/circuitBreaker';
 import { logger } from '../config/logger';
 
 const router = Router();
@@ -52,7 +53,7 @@ router.get('/health', async (req: Request, res: Response) => {
     overallStatus = 'unhealthy';
   }
 
-  const health: GatewayHealth = {
+  const health = {
     status: overallStatus,
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
@@ -61,6 +62,7 @@ router.get('/health', async (req: Request, res: Response) => {
       redis: redisHealthy ? 'connected' : 'disconnected',
       nats: natsHealthy ? 'connected' : 'disconnected',
     },
+    circuitBreakers: circuitBreaker.getStates(),
   };
 
   const statusCode = overallStatus === 'unhealthy' ? 503 : 200;

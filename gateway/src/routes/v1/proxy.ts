@@ -5,6 +5,7 @@ import { HEADERS } from '@microservices/shared';
 import { config } from '../../config';
 import { logger } from '../../config/logger';
 import { authenticate } from '../../middleware/auth';
+import { circuitBreakerMiddleware } from '../../middleware/circuitBreaker';
 import { NotFoundError } from '../../utils/errors';
 
 export function createProxyRouter(version: string): Router {
@@ -90,8 +91,10 @@ export function createProxyRouter(version: string): Router {
       },
     };
 
-    // Build middleware chain: auth (if required) → proxy
+    // Build middleware chain: circuit breaker → auth (if required) → proxy
     const middlewares: any[] = [];
+
+    middlewares.push(circuitBreakerMiddleware(route.serviceName));
 
     if (route.auth) {
       middlewares.push(authenticate);
@@ -101,7 +104,7 @@ export function createProxyRouter(version: string): Router {
 
     router.use(route.prefix, ...middlewares);
     logger.info(
-      `Route mounted: /api/${version}${route.prefix} → ${route.target} [auth=${route.auth}]`,
+      `Route mounted: /api/${version}${route.prefix} → ${route.target} [auth=${route.auth}, circuit=${route.serviceName}]`,
     );
   }
 
