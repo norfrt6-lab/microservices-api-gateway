@@ -1,0 +1,19 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY package.json ./
+COPY shared/package.json ./shared/
+COPY services/product-service/package.json ./services/product-service/
+
+RUN npm install --workspace=shared --workspace=services/product-service
+
+COPY shared/ ./shared/
+COPY services/product-service/ ./services/product-service/
+COPY tsconfig.base.json ./
+
+RUN cd services/product-service && npx prisma generate
+
+EXPOSE 3002
+
+CMD ["npm", "run", "dev:product"]

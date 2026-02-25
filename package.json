@@ -1,0 +1,26 @@
+{
+  "name": "microservices-api-gateway",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Microservices API Gateway with service discovery, distributed tracing, and production-grade patterns",
+  "workspaces": [
+    "gateway",
+    "services/user-service",
+    "services/product-service",
+    "services/order-service",
+    "shared"
+  ],
+  "scripts": {
+    "dev:gateway": "npm run dev --workspace=gateway",
+    "dev:user": "npm run dev --workspace=services/user-service",
+    "dev:product": "npm run dev --workspace=services/product-service",
+    "dev:order": "npm run dev --workspace=services/order-service",
+    "build": "npm run build --workspaces",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "seed": "tsx scripts/seed.ts"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

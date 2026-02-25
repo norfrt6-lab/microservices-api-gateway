@@ -1,0 +1,17 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY package.json ./
+COPY shared/package.json ./shared/
+COPY gateway/package.json ./gateway/
+
+RUN npm install --workspace=shared --workspace=gateway
+
+COPY shared/ ./shared/
+COPY gateway/ ./gateway/
+COPY tsconfig.base.json ./
+
+EXPOSE 3000
+
+CMD ["npm", "run", "dev:gateway"]
