@@ -1,3 +1,7 @@
+// OTel must init before all other imports
+import { initTelemetry, getMetricsRegister, shutdownTelemetry } from '@microservices/shared';
+initTelemetry('order-service');
+
 import express from 'express';
 import {
   PORTS,
@@ -18,6 +22,17 @@ app.use(gatewayGuard(process.env.GATEWAY_SECRET || ''));
 
 app.get('/health', (_req, res) => {
   res.json({ service: SERVICES.ORDER, status: 'healthy', timestamp: new Date().toISOString() });
+});
+
+// Prometheus metrics endpoint
+app.get('/metrics', async (_req, res) => {
+  try {
+    const register = getMetricsRegister();
+    res.set('Content-Type', register.contentType);
+    res.end(await register.metrics());
+  } catch {
+    res.status(500).end();
+  }
 });
 
 app.use(orderRoutes);
@@ -47,6 +62,7 @@ const shutdown = async () => {
   console.log(`Shutting down ${SERVICES.ORDER}...`);
   stopHeartbeat();
   await closeNatsClient();
+  await shutdownTelemetry();
   await orderService.prisma.$disconnect();
   process.exit(0);
 };
