@@ -3,6 +3,7 @@ import { config } from './config';
 import { logger } from './config/logger';
 import { connectRedis, disconnectRedis } from './services/redis';
 import { connectNats, disconnectNats } from './services/nats';
+import { startServiceDiscovery, stopServiceDiscovery } from './services/discovery';
 
 async function start() {
   try {
@@ -13,12 +14,17 @@ async function start() {
     await connectNats();
     logger.info('NATS connected');
 
+    // Start listening for service heartbeats
+    await startServiceDiscovery();
+    logger.info('Service discovery started');
+
     const server = app.listen(config.port, () => {
       logger.info(`Gateway running on port ${config.port} [${config.nodeEnv}]`);
     });
 
     const shutdown = async () => {
       logger.info('Shutting down gateway...');
+      stopServiceDiscovery();
       server.close(async () => {
         await disconnectRedis();
         await disconnectNats();

@@ -4,6 +4,7 @@ import { config } from '../config';
 import { isRedisHealthy } from '../services/redis';
 import { isNatsHealthy } from '../services/nats';
 import { circuitBreaker } from '../middleware/circuitBreaker';
+import { getRegisteredServices } from '../services/discovery';
 import { logger } from '../config/logger';
 
 const router = Router();
@@ -63,6 +64,7 @@ router.get('/health', async (req: Request, res: Response) => {
       nats: natsHealthy ? 'connected' : 'disconnected',
     },
     circuitBreakers: circuitBreaker.getStates(),
+    serviceRegistry: getRegisteredServices(),
   };
 
   const statusCode = overallStatus === 'unhealthy' ? 503 : 200;
