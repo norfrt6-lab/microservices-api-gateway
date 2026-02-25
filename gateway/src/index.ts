@@ -26,12 +26,17 @@ async function start() {
 
     const shutdown = async () => {
       logger.info('Shutting down gateway...');
+      const forceExit = setTimeout(() => process.exit(1), 10000);
       stopServiceDiscovery();
       server.close(async () => {
-        await disconnectRedis();
-        await disconnectNats();
-        logger.info('Gateway stopped');
-        process.exit(0);
+        try {
+          await disconnectRedis();
+          await disconnectNats();
+          logger.info('Gateway stopped');
+        } finally {
+          clearTimeout(forceExit);
+          process.exit(0);
+        }
       });
     };
 

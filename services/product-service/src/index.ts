@@ -13,10 +13,12 @@ import {
   stopHeartbeat,
   natsRespond,
   closeNatsClient,
+  createLogger,
 } from '@microservices/shared';
 import { productRoutes } from './routes/product.routes';
 import * as productService from './services/product.service';
 
+const logger = createLogger(SERVICES.PRODUCT);
 const app = express();
 app.use(express.json({ limit: '1mb' }));
 
@@ -45,7 +47,7 @@ async function start() {
       url: process.env.NATS_URL || 'nats://nats:4222',
       name: SERVICES.PRODUCT,
       onStatusChange: (type, data) => {
-        console.log(`[${SERVICES.PRODUCT}] NATS status: ${type}`, data);
+        logger.info({ type, data }, 'NATS status change');
       },
     });
 
@@ -54,7 +56,7 @@ async function start() {
     natsRespond<{ productId: string; quantity: number }, { available: boolean }>(
       NATS_SUBJECTS.PRODUCT_CHECK_STOCK,
       async (data, correlationId) => {
-        console.log(`[NATS] product.checkStock for ${data.productId} qty=${data.quantity} (correlation: ${correlationId})`);
+        logger.info({ productId: data.productId, quantity: data.quantity, correlationId }, 'NATS product.checkStock');
         const available = await productService.checkStock(data.productId, data.quantity);
         return { available };
       },
@@ -64,7 +66,7 @@ async function start() {
     natsRespond<{ productId: string; quantity: number }, { reserved: boolean }>(
       NATS_SUBJECTS.PRODUCT_RESERVE_STOCK,
       async (data, correlationId) => {
-        console.log(`[NATS] product.reserveStock for ${data.productId} qty=${data.quantity} (correlation: ${correlationId})`);
+        logger.info({ productId: data.productId, quantity: data.quantity, correlationId }, 'NATS product.reserveStock');
         const reserved = await productService.reserveStock(data.productId, data.quantity);
         return { reserved };
       },
@@ -74,7 +76,7 @@ async function start() {
     natsRespond<{ productId: string; quantity: number }, { released: boolean }>(
       NATS_SUBJECTS.PRODUCT_RELEASE_STOCK,
       async (data, correlationId) => {
-        console.log(`[NATS] product.releaseStock for ${data.productId} qty=${data.quantity} (correlation: ${correlationId})`);
+        logger.info({ productId: data.productId, quantity: data.quantity, correlationId }, 'NATS product.releaseStock');
         await productService.releaseStock(data.productId, data.quantity);
         return { released: true };
       },
@@ -82,21 +84,26 @@ async function start() {
     );
 
     app.listen(PORTS.PRODUCT, () => {
-      console.log(`${SERVICES.PRODUCT} running on port ${PORTS.PRODUCT}`);
+      logger.info({ port: PORTS.PRODUCT }, `${SERVICES.PRODUCT} running`);
     });
   } catch (err) {
-    console.error(`Failed to start ${SERVICES.PRODUCT}:`, err);
+    logger.fatal({ err }, `Failed to start ${SERVICES.PRODUCT}`);
     process.exit(1);
   }
 }
 
 const shutdown = async () => {
-  console.log(`Shutting down ${SERVICES.PRODUCT}...`);
-  stopHeartbeat();
-  await closeNatsClient();
-  await shutdownTelemetry();
-  await productService.prisma.$disconnect();
-  process.exit(0);
+  logger.info('Shutting down...');
+  const forceExit = setTimeout(() => process.exit(1), 10000);
+  try {
+    stopHeartbeat();
+    await closeNatsClient();
+    await shutdownTelemetry();
+    await productService.prisma.$disconnect();
+  } finally {
+    clearTimeout(forceExit);
+    process.exit(0);
+  }
 };
 
 process.on('SIGTERM', shutdown);

@@ -1,6 +1,7 @@
 import { connect, NatsConnection, StringCodec } from 'nats';
 import { config } from '../config';
 import { logger } from '../config/logger';
+import { natsMessagesTotal } from '../telemetry/meter';
 
 let connection: NatsConnection | null = null;
 const sc = StringCodec();
@@ -16,6 +17,13 @@ export async function connectNats(): Promise<NatsConnection> {
     });
 
     logger.info(`NATS connected to ${config.nats.url}`);
+
+    // Track NATS messages via subscription callback
+    const origPublish = connection.publish.bind(connection);
+    connection.publish = (subject: string, ...args: any[]) => {
+      natsMessagesTotal.inc({ subject, direction: 'outbound' });
+      return origPublish(subject, ...args);
+    };
 
     (async () => {
       const status = connection!.status();

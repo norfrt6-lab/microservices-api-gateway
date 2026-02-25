@@ -13,10 +13,12 @@ import {
   stopHeartbeat,
   natsRespond,
   closeNatsClient,
+  createLogger,
 } from '@microservices/shared';
 import { userRoutes } from './routes/user.routes';
 import * as userService from './services/user.service';
 
+const logger = createLogger(SERVICES.USER);
 const app = express();
 app.use(express.json({ limit: '1mb' }));
 
@@ -49,7 +51,7 @@ async function start() {
       url: process.env.NATS_URL || 'nats://nats:4222',
       name: SERVICES.USER,
       onStatusChange: (type, data) => {
-        console.log(`[${SERVICES.USER}] NATS status: ${type}`, data);
+        logger.info({ type, data }, 'NATS status change');
       },
     });
 
@@ -60,28 +62,33 @@ async function start() {
     natsRespond<{ userId: string }, any>(
       NATS_SUBJECTS.USER_GET,
       async (data, correlationId) => {
-        console.log(`[NATS] user.get request for ${data.userId} (correlation: ${correlationId})`);
+        logger.info({ userId: data.userId, correlationId }, 'NATS user.get request');
         return await userService.getUserById(data.userId);
       },
       SERVICES.USER,
     );
 
     app.listen(PORTS.USER, () => {
-      console.log(`${SERVICES.USER} running on port ${PORTS.USER}`);
+      logger.info({ port: PORTS.USER }, `${SERVICES.USER} running`);
     });
   } catch (err) {
-    console.error(`Failed to start ${SERVICES.USER}:`, err);
+    logger.fatal({ err }, `Failed to start ${SERVICES.USER}`);
     process.exit(1);
   }
 }
 
 const shutdown = async () => {
-  console.log(`Shutting down ${SERVICES.USER}...`);
-  stopHeartbeat();
-  await closeNatsClient();
-  await shutdownTelemetry();
-  await userService.prisma.$disconnect();
-  process.exit(0);
+  logger.info('Shutting down...');
+  const forceExit = setTimeout(() => process.exit(1), 10000);
+  try {
+    stopHeartbeat();
+    await closeNatsClient();
+    await shutdownTelemetry();
+    await userService.prisma.$disconnect();
+  } finally {
+    clearTimeout(forceExit);
+    process.exit(0);
+  }
 };
 
 process.on('SIGTERM', shutdown);

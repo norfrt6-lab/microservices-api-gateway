@@ -11,6 +11,7 @@ import { metricsRouter } from './routes/metrics';
 import { rateLimiter } from './middleware/rateLimiter';
 import { cacheMiddleware, cacheInvalidator } from './middleware/cache';
 import { idempotencyMiddleware } from './middleware/idempotency';
+import { docsRouter } from './routes/docs';
 import { NotFoundError } from './utils/errors';
 import { config } from './config';
 
@@ -22,9 +23,9 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'"],
-        styleSrc: ["'self'"],
-        imgSrc: ["'self'"],
+        scriptSrc: ["'self'", 'https://cdn.jsdelivr.net'],
+        styleSrc: ["'self'", 'https://cdn.jsdelivr.net'],
+        imgSrc: ["'self'", 'data:'],
       },
     },
     hsts: { maxAge: 31536000, includeSubDomains: true },
@@ -67,9 +68,10 @@ app.use(httpLogger);
 // Prometheus metrics collection
 app.use(metricsMiddleware);
 
-// Health & metrics endpoints (before rate limiter — not rate limited)
+// Health, metrics & docs endpoints (before rate limiter — not rate limited)
 app.use(healthRouter);
 app.use(metricsRouter);
+app.use(docsRouter);
 
 // Rate limiting (after health, before proxy routes)
 app.use('/api', rateLimiter);

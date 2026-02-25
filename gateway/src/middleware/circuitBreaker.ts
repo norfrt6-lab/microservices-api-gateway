@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { logger } from '../config/logger';
 import { ServiceUnavailableError } from '../utils/errors';
+import { circuitBreakerState as circuitBreakerGauge } from '../telemetry/meter';
 
 export enum CircuitState {
   CLOSED = 'CLOSED',
@@ -66,6 +67,7 @@ class CircuitBreaker {
           circuit.state = CircuitState.HALF_OPEN;
           circuit.halfOpenRequests = 0;
           circuit.successCount = 0;
+          circuitBreakerGauge.set({ service }, 2); // 2 = HALF_OPEN
           logger.info({ service, state: CircuitState.HALF_OPEN }, 'Circuit breaker → HALF_OPEN');
           return true;
         }
@@ -93,6 +95,7 @@ class CircuitBreaker {
         circuit.failureCount = 0;
         circuit.halfOpenRequests = 0;
         circuit.successCount = 0;
+        circuitBreakerGauge.set({ service }, 0); // 0 = CLOSED
         logger.info({ service, state: CircuitState.CLOSED }, 'Circuit breaker → CLOSED');
       }
     } else if (circuit.state === CircuitState.CLOSED) {
@@ -113,6 +116,7 @@ class CircuitBreaker {
       circuit.lastFailureTime = Date.now();
       circuit.halfOpenRequests = 0;
       circuit.successCount = 0;
+      circuitBreakerGauge.set({ service }, 1); // 1 = OPEN
       logger.warn({ service, state: CircuitState.OPEN }, 'Circuit breaker → OPEN (half-open failure)');
     } else if (circuit.state === CircuitState.CLOSED) {
       circuit.failureCount++;
@@ -120,6 +124,7 @@ class CircuitBreaker {
 
       if (circuit.failureCount >= this.options.failureThreshold) {
         circuit.state = CircuitState.OPEN;
+        circuitBreakerGauge.set({ service }, 1); // 1 = OPEN
         logger.warn(
           { service, state: CircuitState.OPEN, failures: circuit.failureCount },
           'Circuit breaker → OPEN (threshold reached)',
