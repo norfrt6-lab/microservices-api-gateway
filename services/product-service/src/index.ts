@@ -1,3 +1,7 @@
+// OTel must init before all other imports
+import { initTelemetry, getMetricsRegister, shutdownTelemetry } from '@microservices/shared';
+initTelemetry('product-service');
+
 import express from 'express';
 import {
   PORTS,
@@ -22,6 +26,17 @@ app.get('/health', (_req, res) => {
   res.json({ service: SERVICES.PRODUCT, status: 'healthy', timestamp: new Date().toISOString() });
 });
 
+// Prometheus metrics endpoint
+app.get('/metrics', async (_req, res) => {
+  try {
+    const register = getMetricsRegister();
+    res.set('Content-Type', register.contentType);
+    res.end(await register.metrics());
+  } catch {
+    res.status(500).end();
+  }
+});
+
 app.use(productRoutes);
 
 async function start() {
@@ -36,7 +51,6 @@ async function start() {
 
     startHeartbeat(SERVICES.PRODUCT, `http://${SERVICES.PRODUCT}:${PORTS.PRODUCT}`);
 
-    // NATS responder: product.checkStock
     natsRespond<{ productId: string; quantity: number }, { available: boolean }>(
       NATS_SUBJECTS.PRODUCT_CHECK_STOCK,
       async (data, correlationId) => {
@@ -47,7 +61,6 @@ async function start() {
       SERVICES.PRODUCT,
     );
 
-    // NATS responder: product.reserveStock (saga step)
     natsRespond<{ productId: string; quantity: number }, { reserved: boolean }>(
       NATS_SUBJECTS.PRODUCT_RESERVE_STOCK,
       async (data, correlationId) => {
@@ -58,7 +71,6 @@ async function start() {
       SERVICES.PRODUCT,
     );
 
-    // NATS responder: product.releaseStock (saga compensation)
     natsRespond<{ productId: string; quantity: number }, { released: boolean }>(
       NATS_SUBJECTS.PRODUCT_RELEASE_STOCK,
       async (data, correlationId) => {
@@ -82,6 +94,7 @@ const shutdown = async () => {
   console.log(`Shutting down ${SERVICES.PRODUCT}...`);
   stopHeartbeat();
   await closeNatsClient();
+  await shutdownTelemetry();
   await productService.prisma.$disconnect();
   process.exit(0);
 };
