@@ -22,6 +22,14 @@ export const routeMap: Record<string, RouteConfig[]> = {
     // Order routes (auth required)
     { prefix: '/orders', target: config.services.order, serviceName: 'order-service', auth: true },
   ],
+
+  // V2: Same routes with deprecation headers — demonstrates API versioning strategy
+  v2: [
+    { prefix: '/auth', target: config.services.user, serviceName: 'user-service', auth: false },
+    { prefix: '/users', target: config.services.user, serviceName: 'user-service', auth: true },
+    { prefix: '/products', target: config.services.product, serviceName: 'product-service', auth: false },
+    { prefix: '/orders', target: config.services.order, serviceName: 'order-service', auth: true },
+  ],
 };
 
 export function getRouteConfig(version: string, path: string): RouteConfig | undefined {
