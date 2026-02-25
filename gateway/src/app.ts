@@ -10,6 +10,7 @@ import { healthRouter } from './routes/health';
 import { metricsRouter } from './routes/metrics';
 import { rateLimiter } from './middleware/rateLimiter';
 import { cacheMiddleware, cacheInvalidator } from './middleware/cache';
+import { idempotencyMiddleware } from './middleware/idempotency';
 import { NotFoundError } from './utils/errors';
 import { config } from './config';
 
@@ -72,6 +73,9 @@ app.use(metricsRouter);
 
 // Rate limiting (after health, before proxy routes)
 app.use('/api', rateLimiter);
+
+// Idempotency (POST/PUT/PATCH with Idempotency-Key header)
+app.use('/api', idempotencyMiddleware);
 
 // Response caching (GET) + cache invalidation (POST/PUT/PATCH/DELETE)
 app.use('/api', cacheMiddleware({ ttl: 60 }));
