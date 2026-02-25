@@ -7,13 +7,51 @@ import { errorHandler } from './middleware/errorHandler';
 import { router } from './routes';
 import { healthRouter } from './routes/health';
 import { NotFoundError } from './utils/errors';
+import { config } from './config';
 
 const app = express();
 
-// Security
-app.use(helmet());
-app.use(cors());
-app.use(express.json({ limit: '10mb' }));
+// Security headers (HSTS, X-Frame-Options, X-Content-Type-Options, CSP, etc.)
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'"],
+        imgSrc: ["'self'"],
+      },
+    },
+    hsts: { maxAge: 31536000, includeSubDomains: true },
+  }),
+);
+
+// Strict CORS — whitelist origins, restrict methods
+const allowedOrigins = config.nodeEnv === 'production'
+  ? (process.env.CORS_ORIGINS || '').split(',').filter(Boolean)
+  : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:8080'];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (server-to-server, curl, health probes)
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`Origin ${origin} not allowed by CORS`));
+      }
+    },
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-correlation-id', 'idempotency-key'],
+    exposedHeaders: ['x-correlation-id'],
+    credentials: true,
+    maxAge: 600, // 10 min preflight cache
+  }),
+);
+
+// Request size limits
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: false, limit: '1mb' }));
 
 // Correlation ID (must be before logger)
 app.use(requestIdMiddleware);

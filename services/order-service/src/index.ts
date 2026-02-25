@@ -1,8 +1,11 @@
 import express from 'express';
-import { PORTS, SERVICES } from '@microservices/shared';
+import { PORTS, SERVICES, gatewayGuard } from '@microservices/shared';
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
+
+// Reject direct access — only allow requests from gateway
+app.use(gatewayGuard(process.env.GATEWAY_SECRET || ''));
 
 app.get('/health', (_req, res) => {
   res.json({ service: SERVICES.ORDER, status: 'healthy', timestamp: new Date().toISOString() });
