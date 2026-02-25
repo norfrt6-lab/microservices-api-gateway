@@ -5,7 +5,7 @@ import { requestIdMiddleware } from './middleware/requestId';
 import { httpLogger } from './middleware/logger';
 import { errorHandler } from './middleware/errorHandler';
 import { router } from './routes';
-import { sendSuccess } from './utils/response';
+import { healthRouter } from './routes/health';
 import { NotFoundError } from './utils/errors';
 
 const app = express();
@@ -21,19 +21,8 @@ app.use(requestIdMiddleware);
 // Structured logging
 app.use(httpLogger);
 
-// Liveness probe (lightweight, no dependency checks)
-app.get('/health/live', (_req, res) => {
-  res.json({ status: 'ok' });
-});
-
-// Placeholder deep health (will be replaced in feat/health-checks)
-app.get('/health', (req, res) => {
-  sendSuccess(res, {
-    status: 'healthy',
-    uptime: process.uptime(),
-    timestamp: new Date().toISOString(),
-  });
-});
+// Health endpoints (before proxy routes — not proxied)
+app.use(healthRouter);
 
 // Versioned API proxy routes
 app.use(router);
