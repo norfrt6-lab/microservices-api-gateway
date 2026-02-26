@@ -28,7 +28,7 @@ RUN npm install --workspace=shared --workspace=services/order-service --omit=dev
 COPY --from=builder /app/shared/dist/ ./shared/dist/
 COPY --from=builder /app/services/order-service/dist/ ./services/order-service/dist/
 COPY --from=builder /app/services/order-service/prisma/ ./services/order-service/prisma/
-COPY --from=builder /app/services/order-service/node_modules/.prisma/ ./services/order-service/node_modules/.prisma/
+COPY --from=builder /app/services/order-service/generated/ ./services/order-service/generated/
 
 EXPOSE 3003
 
