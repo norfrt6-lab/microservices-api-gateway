@@ -54,6 +54,14 @@ npm test --workspace=shared
 npx vitest run --coverage --workspace=gateway
 ```
 
+```bash
+# Integration tests (Docker Compose)
+make test-integration
+
+# If make is not available
+npm run test:integration
+```
+
 ## Code Style
 
 - TypeScript strict mode

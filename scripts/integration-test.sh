@@ -11,6 +11,23 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m'
 
+CURL_MAX_TIME="${CURL_MAX_TIME:-15}"
+CURL_RETRY="${CURL_RETRY:-3}"
+CURL_RETRY_DELAY="${CURL_RETRY_DELAY:-1}"
+
+curl_request() {
+  curl -s --max-time "$CURL_MAX_TIME" --retry "$CURL_RETRY" --retry-delay "$CURL_RETRY_DELAY" --retry-connrefused "$@"
+}
+
+curl_status() {
+  local code
+  code=$(curl_request -o /dev/null -w "%{http_code}" "$@" 2>/dev/null || true)
+  if [ -z "$code" ]; then
+    code="000"
+  fi
+  echo "$code"
+}
+
 check() {
   local name="$1"
   local expected_status="$2"
@@ -44,16 +61,16 @@ fi
 
 # 1) Health endpoints
 echo "--- Health ---"
-STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/health")
+STATUS=$(curl_status "$BASE_URL/health")
 check "GET /health" 200 "$STATUS"
 
-STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/health/live")
+STATUS=$(curl_status "$BASE_URL/health/live")
 check "GET /health/live" 200 "$STATUS"
 
 # 2) Metrics endpoint
 echo ""
 echo "--- Metrics ---"
-STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/metrics")
+STATUS=$(curl_status "$BASE_URL/metrics")
 check "GET /metrics" 200 "$STATUS"
 
 # 3) Register + Login
@@ -63,7 +80,7 @@ EMAIL="int-$(date +%s)@test.com"
 PASSWORD="test1234"
 NAME="Integration Test"
 
-REGISTER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/api/v1/auth/register" \
+REGISTER_STATUS=$(curl_status "$BASE_URL/api/v1/auth/register" \
   -X POST -H "Content-Type: application/json" \
   -d "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\",\"name\":\"$NAME\"}")
 
@@ -76,9 +93,9 @@ else
   FAILED=$((FAILED + 1))
 fi
 
-LOGIN_JSON=$(curl -s "$BASE_URL/api/v1/auth/login" \
+LOGIN_JSON=$(curl_request "$BASE_URL/api/v1/auth/login" \
   -X POST -H "Content-Type: application/json" \
-  -d "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\"}")
+  -d "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\"}" || true)
 
 TOKEN=$(echo "$LOGIN_JSON" | sed -n 's/.*"token":"\([^"]*\)".*/\1/p')
 
@@ -93,26 +110,71 @@ fi
 # 4) Products list (public)
 echo ""
 echo "--- Products (public) ---"
-STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/api/v1/products")
+STATUS=$(curl_status "$BASE_URL/api/v1/products")
 check "GET /api/v1/products" 200 "$STATUS"
 
-# 5) Orders (requires auth via gateway)
+# 5) Create product (E2E flow)
+echo ""
+echo "--- Product create (E2E) ---"
+PRODUCT_JSON=$(curl_request "$BASE_URL/api/v1/products" \
+  -X POST -H "Content-Type: application/json" \
+  -d "{\"name\":\"E2E Product\",\"description\":\"E2E Test\",\"price\":19.99,\"stock\":5}" || true)
+
+PRODUCT_ID=$(echo "$PRODUCT_JSON" | sed -n 's/.*"id":"\([^"]*\)".*/\1/p')
+if [ -n "$PRODUCT_ID" ]; then
+  echo -e "${GREEN}PASS${NC} POST /api/v1/products (product created)"
+  PASSED=$((PASSED + 1))
+else
+  echo -e "${RED}FAIL${NC} POST /api/v1/products (no product id)"
+  FAILED=$((FAILED + 1))
+fi
+
+# 6) Orders (E2E flow)
 echo ""
 echo "--- Orders (authenticated) ---"
-if [ -n "$TOKEN" ]; then
-  ORDER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/api/v1/orders" \
-    -H "Authorization: Bearer $TOKEN")
-  # If no orders, still 200 with empty list
+if [ -n "$TOKEN" ] && [ -n "$PRODUCT_ID" ]; then
+  ORDER_JSON=$(curl_request "$BASE_URL/api/v1/orders" \
+      -X POST -H "Content-Type: application/json" \
+      -H "Authorization: Bearer $TOKEN" \
+      -d "{\"items\":[{\"productId\":\"$PRODUCT_ID\",\"quantity\":1}]}" || true)
+
+  ORDER_ID=$(echo "$ORDER_JSON" | sed -n 's/.*"id":"\([^"]*\)".*/\1/p')
+  if [ -n "$ORDER_ID" ]; then
+    echo -e "${GREEN}PASS${NC} POST /api/v1/orders (order created)"
+    PASSED=$((PASSED + 1))
+  else
+    echo -e "${RED}FAIL${NC} POST /api/v1/orders (no order id)"
+    FAILED=$((FAILED + 1))
+  fi
+
+  ORDER_STATUS=$(curl_status "$BASE_URL/api/v1/orders" \
+      -H "Authorization: Bearer $TOKEN")
   check "GET /api/v1/orders" 200 "$ORDER_STATUS"
+
+  if [ -n "$ORDER_ID" ]; then
+    STATUS=$(curl_status "$BASE_URL/api/v1/orders/$ORDER_ID" \
+          -H "Authorization: Bearer $TOKEN")
+    check "GET /api/v1/orders/:id" 200 "$STATUS"
+
+    STATUS=$(curl_status "$BASE_URL/api/v1/orders/$ORDER_ID/confirm" \
+          -X POST \
+          -H "Authorization: Bearer $TOKEN")
+    check "POST /api/v1/orders/:id/confirm" 200 "$STATUS"
+
+    STATUS=$(curl_status "$BASE_URL/api/v1/orders/$ORDER_ID/cancel" \
+          -X POST \
+          -H "Authorization: Bearer $TOKEN")
+    check "POST /api/v1/orders/:id/cancel" 200 "$STATUS"
+  fi
 else
-  echo -e "${RED}SKIP${NC} GET /api/v1/orders (no token)"
+  echo -e "${RED}SKIP${NC} Orders flow (missing token or product id)"
   FAILED=$((FAILED + 1))
 fi
 
 # 6) 404 routing
 echo ""
 echo "--- 404 ---"
-STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/api/v1/nonexistent")
+STATUS=$(curl_status "$BASE_URL/api/v1/nonexistent")
 check "GET /api/v1/nonexistent" 404 "$STATUS"
 
 echo ""

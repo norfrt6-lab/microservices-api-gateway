@@ -68,8 +68,10 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
       - run: npm ci
+      - name: Build stack
+        run: docker compose -f docker-compose.yml build
       - name: Start stack
-        run: docker compose -f docker-compose.yml up -d --build
+        run: docker compose -f docker-compose.yml up -d
       - name: Wait for services
         run: sleep 30
       - name: Run integration tests

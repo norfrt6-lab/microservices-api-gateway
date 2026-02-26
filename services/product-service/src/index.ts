@@ -89,6 +89,21 @@ async function start() {
       SERVICES.PRODUCT,
     );
 
+    natsRespond<{ productId: string }, { id: string; name: string; price: number; stock: number }>(
+      NATS_SUBJECTS.PRODUCT_GET,
+      async (data, correlationId) => {
+        logger.info({ productId: data.productId, correlationId }, 'NATS product.get');
+        const product = await productService.getProductById(data.productId);
+        return {
+          id: product.id,
+          name: product.name,
+          price: Number(product.price),
+          stock: product.stock,
+        };
+      },
+      SERVICES.PRODUCT,
+    );
+
     app.listen(PORTS.PRODUCT, () => {
       logger.info({ port: PORTS.PRODUCT }, `${SERVICES.PRODUCT} running`);
     });
