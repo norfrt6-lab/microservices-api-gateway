@@ -165,6 +165,8 @@ jobs:
         run: |
           chmod +x scripts/integration-test.sh
           ./scripts/integration-test.sh http://localhost:3000
+      - name: Run contract tests
+        run: npm run test:contract
       - name: Shutdown stack
         if: always()
         run: docker compose -f docker-compose.yml down -v

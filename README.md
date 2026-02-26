@@ -148,6 +148,10 @@ If `make` is not available, use `npm run test:integration`.
 
 CI runs SCA (`npm audit`), generates an SBOM (`sbom.spdx.json`), and performs container image scans (Trivy).
 
+### Contract Tests (OpenAPI)
+
+Run `npm run test:contract` to validate the OpenAPI spec includes the expected routes and methods.
+
 ### Prisma Migrations (per service)
 
 Each service manages its own Prisma migrations and database. To apply migrations locally, run:

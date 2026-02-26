@@ -66,6 +66,10 @@ npm run test:integration
 
 CI runs SCA (`npm audit`), generates an SBOM (`sbom.spdx.json`), and performs container image scans (Trivy).
 
+### Contract Tests (OpenAPI)
+
+Run `npm run test:contract` to validate the OpenAPI spec includes the expected routes and methods.
+
 ## Code Style
 
 - TypeScript strict mode
