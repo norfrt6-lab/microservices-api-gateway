@@ -23,7 +23,7 @@ const openApiSpec = {
     { name: 'Orders', description: 'Order management with saga pattern' },
   ],
   paths: {
-    '/users/register': {
+    '/auth/register': {
       post: {
         tags: ['Auth'],
         summary: 'Register a new user',
@@ -41,7 +41,7 @@ const openApiSpec = {
         },
       },
     },
-    '/users/login': {
+    '/auth/login': {
       post: {
         tags: ['Auth'],
         summary: 'Authenticate and receive JWT',
