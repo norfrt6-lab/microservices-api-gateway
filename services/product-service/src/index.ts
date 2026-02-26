@@ -3,6 +3,7 @@ import { initTelemetry, getMetricsRegister, shutdownTelemetry } from '@microserv
 initTelemetry('product-service');
 
 import express from 'express';
+
 import {
   PORTS,
   SERVICES,
@@ -43,8 +44,11 @@ app.get('/metrics', async (_req, res) => {
 app.use(productRoutes);
 app.use(errorHandler);
 
+
+
 async function start() {
   try {
+
     await createNatsClient({
       url: process.env.NATS_URL || 'nats://nats:4222',
       name: SERVICES.PRODUCT,

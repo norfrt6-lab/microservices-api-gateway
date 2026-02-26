@@ -1,9 +1,20 @@
 import { NextFunction, Request, Response } from 'express';
 import { ZodError } from 'zod';
-import { DomainError } from '@microservices/shared';
+import { DomainError, createLogger, SERVICES } from '@microservices/shared';
 
-export function errorHandler(err: Error, _req: Request, res: Response, _next: NextFunction) {
+const logger = createLogger(SERVICES.USER);
+
+export function errorHandler(err: Error, req: Request, res: Response, _next: NextFunction) {
   if (err instanceof DomainError) {
+    logger.warn(
+      {
+        code: err.code,
+        statusCode: err.statusCode,
+        path: req.path,
+        method: req.method,
+      },
+      'Domain error',
+    );
     return res.status(err.statusCode).json({
       success: false,
       error: {
@@ -19,6 +30,14 @@ export function errorHandler(err: Error, _req: Request, res: Response, _next: Ne
       path: e.path.join('.'),
       message: e.message,
     }));
+    logger.warn(
+      {
+        details,
+        path: req.path,
+        method: req.method,
+      },
+      'Validation error',
+    );
     return res.status(400).json({
       success: false,
       error: {
@@ -30,6 +49,13 @@ export function errorHandler(err: Error, _req: Request, res: Response, _next: Ne
   }
 
   if (err instanceof SyntaxError && 'body' in err) {
+    logger.warn(
+      {
+        path: req.path,
+        method: req.method,
+      },
+      'Invalid JSON in request body',
+    );
     return res.status(400).json({
       success: false,
       error: {
@@ -39,6 +65,14 @@ export function errorHandler(err: Error, _req: Request, res: Response, _next: Ne
     });
   }
 
+  logger.error(
+    {
+      err,
+      path: req.path,
+      method: req.method,
+    },
+    'Unhandled error',
+  );
   return res.status(500).json({
     success: false,
     error: {

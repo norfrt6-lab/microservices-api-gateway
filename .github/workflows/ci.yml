@@ -73,6 +73,10 @@ jobs:
       - name: Wait for services
         run: sleep 30
       - name: Run integration tests
+        env:
+          USER_DB_URL: postgresql://postgres:postgres@localhost:5432/users_db
+          PRODUCT_DB_URL: postgresql://postgres:postgres@localhost:5432/products_db
+          ORDER_DB_URL: postgresql://postgres:postgres@localhost:5432/orders_db
         run: |
           chmod +x scripts/integration-test.sh
           ./scripts/integration-test.sh http://localhost:3000

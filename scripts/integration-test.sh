@@ -29,6 +29,19 @@ echo "=== Integration Tests (Docker Compose) ==="
 echo "Target: $BASE_URL"
 echo ""
 
+# Optional: run Prisma migrations before tests (requires DB URLs)
+if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
+  echo "--- Migrations ---"
+  if [ -n "${USER_DB_URL:-}" ] || [ -n "${PRODUCT_DB_URL:-}" ] || [ -n "${ORDER_DB_URL:-}" ]; then
+    [ -n "${USER_DB_URL:-}" ] && npm run db:migrate --workspace=services/user-service
+    [ -n "${PRODUCT_DB_URL:-}" ] && npm run db:migrate --workspace=services/product-service
+    [ -n "${ORDER_DB_URL:-}" ] && npm run db:migrate --workspace=services/order-service
+  else
+    echo "SKIP migrations (database URLs not set)"
+  fi
+  echo ""
+fi
+
 # 1) Health endpoints
 echo "--- Health ---"
 STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/health")
