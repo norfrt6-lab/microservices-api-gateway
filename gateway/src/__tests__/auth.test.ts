@@ -1,4 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import type { Request } from 'express';
 import jwt from 'jsonwebtoken';
 
 // Mock logger
@@ -16,12 +17,19 @@ vi.mock('../config', () => ({
 import { authenticate, requireRole, optionalAuth } from '../middleware/auth';
 import { UserRole } from '@microservices/shared';
 
+type MockReq = Partial<Request> & {
+  headers: Record<string, string>;
+  correlationId: string;
+};
+
+type MockRes = Record<string, never>;
+
 function createMockReqRes(authHeader?: string) {
-  const req: any = {
+  const req: MockReq = {
     headers: authHeader ? { authorization: authHeader } : {},
     correlationId: 'test-corr-id',
   };
-  const res: any = {};
+  const res: MockRes = {};
   const next = vi.fn();
   return { req, res, next };
 }

@@ -1,4 +1,4 @@
-import { PrismaClient, OrderStatus } from '@prisma/client';
+import { PrismaClient, OrderStatus } from '../../generated';
 import { natsRequest, natsPublish, retry, NATS_SUBJECTS } from '@microservices/shared';
 
 const prisma = new PrismaClient();
@@ -80,7 +80,7 @@ export async function runOrderCreationSaga(
   const order = await prisma.order.create({
     data: {
       userId,
-      items: items as any,
+      items,
       total,
       status: OrderStatus.PENDING,
       sagaStep: 'CREATED',

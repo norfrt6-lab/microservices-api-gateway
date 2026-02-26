@@ -11,7 +11,7 @@ router.get('/metrics', async (_req: Request, res: Response) => {
   try {
     res.set('Content-Type', register.contentType);
     res.end(await register.metrics());
-  } catch (err) {
+  } catch {
     res.status(500).end();
   }
 });

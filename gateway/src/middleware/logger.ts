@@ -1,10 +1,11 @@
 import pinoHttp from 'pino-http';
 import { logger } from '../config/logger';
+import { GatewayRequest } from '../types/express';
 
 export const httpLogger = pinoHttp({
   logger,
   customProps: (req) => ({
-    correlationId: (req as any).correlationId,
+    correlationId: (req as GatewayRequest).correlationId,
   }),
   customLogLevel: (_req, res, err) => {
     if (res.statusCode >= 500 || err) return 'error';
@@ -21,7 +22,8 @@ export const httpLogger = pinoHttp({
     req: (req) => ({
       method: req.method,
       url: req.url,
-      correlationId: (req as any).raw?.correlationId,
+      correlationId: (req as { raw?: { correlationId?: string } }).raw?.correlationId
+        ?? (req as GatewayRequest).correlationId,
     }),
     res: (res) => ({
       statusCode: res.statusCode,

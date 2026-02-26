@@ -1,4 +1,4 @@
-import { PrismaClient, Prisma, OrderStatus } from '@prisma/client';
+import { PrismaClient, Prisma, OrderStatus } from '../../generated';
 import { natsRequest, natsPublish, NATS_SUBJECTS } from '@microservices/shared';
 import { CreateOrderInput } from '../schemas/order.schema';
 

@@ -18,7 +18,7 @@ export function validate(schemas: ValidationSchemas) {
         req.params = schemas.params.parse(req.params);
       }
       if (schemas.query) {
-        req.query = schemas.query.parse(req.query) as any;
+        req.query = schemas.query.parse(req.query) as Request['query'];
       }
       if (schemas.body) {
         req.body = schemas.body.parse(req.body);

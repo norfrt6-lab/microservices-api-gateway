@@ -59,7 +59,7 @@ async function start() {
     startHeartbeat(SERVICES.USER, `http://${SERVICES.USER}:${PORTS.USER}`);
 
     // NATS responder: user.get — fetch user by ID
-    natsRespond<{ userId: string }, any>(
+    natsRespond<{ userId: string }, Awaited<ReturnType<typeof userService.getUserById>>>(
       NATS_SUBJECTS.USER_GET,
       async (data, correlationId) => {
         logger.info({ userId: data.userId, correlationId }, 'NATS user.get request');

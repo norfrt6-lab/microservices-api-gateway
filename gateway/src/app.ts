@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import './types/express';
 import { requestIdMiddleware } from './middleware/requestId';
 import { httpLogger } from './middleware/logger';
 import { metricsMiddleware } from './middleware/metrics';
