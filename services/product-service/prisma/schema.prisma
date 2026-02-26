@@ -19,8 +19,5 @@ model Product {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  @@check(price > 0)
-  @@check(stock >= 0)
-  @@check(version >= 1)
   @@map("products")
 }

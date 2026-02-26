@@ -211,7 +211,7 @@ chmod +x scripts/integration-test.sh
 | Message Broker | NATS | Lightweight, built-in request/reply, no external dependencies |
 | DB per Service | PostgreSQL (separate DBs) | True data isolation between services |
 | ORM | Prisma | Type-safe, great DX with TypeScript, auto migrations |
-| DB Constraints | Postgres CHECK constraints | Enforce price/stock/total invariants at DB level |
+| DB Constraints | Postgres CHECK constraints | Applied via SQL init script to enforce price/stock/total invariants |
 | Auth | JWT (gateway-level) | Stateless, scalable, gateway handles verification |
 | Rate Limiting | Redis token-bucket (Lua) | Atomic, shared state across gateway instances |
 | Circuit Breaker | Redis-backed implementation | Consistent state across gateway replicas |
