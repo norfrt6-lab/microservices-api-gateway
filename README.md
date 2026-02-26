@@ -138,10 +138,33 @@ chmod +x scripts/test-gateway.sh
 
 ### Integration Tests (Docker Compose)
 
-```bash
-chmod +x scripts/integration-test.sh
-./scripts/integration-test.sh http://localhost:3000
-```
+Run `chmod +x scripts/integration-test.sh` and then `./scripts/integration-test.sh http://localhost:3000`.
+
+### Prisma Migrations (per service)
+
+Each service manages its own Prisma migrations and database. To apply migrations locally, run:
+- `npm run db:migrate --workspace=services/user-service`
+- `npm run db:migrate --workspace=services/product-service`
+- `npm run db:migrate --workspace=services/order-service`
+
+Ensure the corresponding database URLs (`USER_DB_URL`, `PRODUCT_DB_URL`, `ORDER_DB_URL`) are set before running these commands.
+
+### Prisma Migrations (Docker Compose)
+
+When the stack is running in Docker Compose, apply migrations directly to the Postgres container:
+
+- `./scripts/docker-migrate.sh` (all services)
+- `./scripts/docker-migrate.sh user-service` (single service)
+
+This script uses the SQL migration files under each service’s `prisma/migrations` directory and runs them inside the Compose Postgres container.
+
+### Prisma Migrations (Compose one-shot service)
+
+You can also run the one-shot migration container:
+
+- `docker compose run --rm migrate`
+
+This runs the SQL migrations against the Compose Postgres service.
 
 ## API Reference
 
@@ -211,7 +234,7 @@ chmod +x scripts/integration-test.sh
 | Message Broker | NATS | Lightweight, built-in request/reply, no external dependencies |
 | DB per Service | PostgreSQL (separate DBs) | True data isolation between services |
 | ORM | Prisma | Type-safe, great DX with TypeScript, auto migrations |
-| DB Constraints | Postgres CHECK constraints | Applied via SQL init script to enforce price/stock/total invariants |
+| DB Constraints | Postgres CHECK constraints | Applied via Prisma migrations to enforce price/stock/total invariants |
 | Auth | JWT (gateway-level) | Stateless, scalable, gateway handles verification |
 | Rate Limiting | Redis token-bucket (Lua) | Atomic, shared state across gateway instances |
 | Circuit Breaker | Redis-backed implementation | Consistent state across gateway replicas |

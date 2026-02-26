@@ -46,6 +46,8 @@ app.get('/metrics', async (_req, res) => {
 app.use(userRoutes);
 app.use(errorHandler);
 
+
+
 async function start() {
   try {
     // Connect to NATS

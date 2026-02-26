@@ -3,10 +3,11 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 COPY package.json ./
+COPY package-lock.json ./
 COPY shared/package.json ./shared/
 COPY gateway/package.json ./gateway/
 
-RUN npm install --workspace=shared --workspace=gateway
+RUN npm ci --workspace=shared --workspace=gateway
 
 COPY shared/ ./shared/
 COPY gateway/ ./gateway/
@@ -19,10 +20,11 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 
 COPY --from=builder /app/package.json ./
+COPY --from=builder /app/package-lock.json ./
 COPY --from=builder /app/shared/package.json ./shared/
 COPY --from=builder /app/gateway/package.json ./gateway/
 
-RUN npm install --workspace=shared --workspace=gateway --omit=dev
+RUN npm ci --workspace=shared --workspace=gateway --omit=dev
 
 COPY --from=builder /app/shared/dist/ ./shared/dist/
 COPY --from=builder /app/gateway/dist/ ./gateway/dist/
