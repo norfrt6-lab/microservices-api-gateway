@@ -64,9 +64,7 @@ describe('order creation saga', () => {
     const createdOrder = { id: 'ord-new', status: 'PENDING' };
     const finalOrder = { id: 'ord-new', status: 'CONFIRMED' };
 
-    mockPrisma.order.findUnique
-      .mockResolvedValueOnce(null) // idempotency check
-      .mockResolvedValueOnce(finalOrder); // final fetch
+    mockPrisma.order.findUnique.mockResolvedValueOnce(finalOrder);
     mockPrisma.order.create.mockResolvedValue(createdOrder);
     mockPrisma.order.update.mockResolvedValue({});
     vi.mocked(natsRequest).mockResolvedValue({ reserved: true });
