@@ -62,6 +62,10 @@ make test-integration
 npm run test:integration
 ```
 
+### Security Scanning (CI)
+
+CI runs SCA (`npm audit`), generates an SBOM (`sbom.spdx.json`), and performs container image scans (Trivy).
+
 ## Code Style
 
 - TypeScript strict mode
