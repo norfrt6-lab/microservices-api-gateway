@@ -34,19 +34,19 @@ export function createProxyRouter(version: string): Router {
           // Inject gateway secret so services know request came from gateway
           proxyReq.setHeader(HEADERS.GATEWAY_SECRET, config.gatewaySecret);
 
+          // Forward authenticated user info to downstream service
+          if (expressReq.user) {
+            proxyReq.setHeader('x-user-id', expressReq.user.userId);
+            proxyReq.setHeader('x-user-email', expressReq.user.email);
+            proxyReq.setHeader('x-user-role', expressReq.user.role);
+          }
+
           // Forward JSON body to downstream service (for POST/PUT/PATCH)
           if (expressReq.body && Object.keys(expressReq.body).length > 0) {
             const bodyData = JSON.stringify(expressReq.body);
             proxyReq.setHeader('Content-Type', 'application/json');
             proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
             proxyReq.write(bodyData);
-          }
-
-          // Forward authenticated user info to downstream service
-          if (expressReq.user) {
-            proxyReq.setHeader('x-user-id', expressReq.user.userId);
-            proxyReq.setHeader('x-user-email', expressReq.user.email);
-            proxyReq.setHeader('x-user-role', expressReq.user.role);
           }
 
           logger.debug(

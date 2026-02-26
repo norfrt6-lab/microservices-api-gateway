@@ -25,7 +25,7 @@ FROM node:20-bookworm-slim AS runner
 WORKDIR /app
 
 RUN apt-get update -y \
-    && apt-get install -y openssl ca-certificates \
+    && apt-get install -y openssl ca-certificates wget \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app/package.json ./

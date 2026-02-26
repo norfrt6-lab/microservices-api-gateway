@@ -140,6 +140,10 @@ chmod +x scripts/test-gateway.sh
 
 Run `chmod +x scripts/integration-test.sh` and then `./scripts/integration-test.sh http://localhost:3000`.
 
+Alternatively, use `make test-integration` to build the stack, run integration tests, and clean up in one command.
+
+If `make` is not available, use `npm run test:integration`.
+
 ### Prisma Migrations (per service)
 
 Each service manages its own Prisma migrations and database. To apply migrations locally, run:
