@@ -30,7 +30,7 @@ A production-grade microservices architecture featuring an API gateway with comp
                           └──────┬───────┘
                                  │
                 ┌────────────────▼──────────────────┐
-                │         API Gateway (v1)           │
+                │  API Gateway (v1 deprecated, v2)   │
                 │                                    │
                 │  • JWT Auth + RBAC                 │
                 │  • Rate Limiting (Redis)            │
@@ -209,7 +209,7 @@ chmod +x scripts/test-gateway.sh
 | Idempotency | Redis + DB (dual-layer) | Gateway caches responses, DB enforces uniqueness |
 | Deployment | Kubernetes | Auto-scaling, self-healing, rolling deploys |
 | Secrets | K8s Secrets (Sealed Secrets) | Git-safe encrypted secrets |
-| API Versioning | URL-based (`/api/v1/`) | Explicit, easy to route and deprecate |
+| API Versioning | URL-based (`/api/v1/`, `/api/v2/`) | v1 deprecated via headers; v2 current |
 
 ## Observability Guide
 
