@@ -14,7 +14,7 @@ export function validate<T>(schema: ZodSchema<T>, options: ValidateOptions = {})
   return (req: Request, _res: Response, next: NextFunction) => {
     try {
       const data = schema.parse(req[source]);
-      (req as Record<string, unknown>)[source] = data;
+      (req as unknown as Record<string, unknown>)[source] = data;
       next();
     } catch (err) {
       const details =
