@@ -90,6 +90,21 @@ describe('user controller', () => {
         error: expect.objectContaining({ code: 'UNAUTHORIZED' }),
       }));
     });
+
+    it('should return 400 when JWT secret is missing', async () => {
+      vi.mocked(userService.loginUser).mockRejectedValue(new Error('JWT secret not configured'));
+
+      const req: any = { body: { email: 'test@test.com', password: 'password123' } };
+      const res = createMockRes();
+
+      await login(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        success: false,
+        error: expect.objectContaining({ code: 'BAD_REQUEST' }),
+      }));
+    });
   });
 
   describe('getProfile', () => {

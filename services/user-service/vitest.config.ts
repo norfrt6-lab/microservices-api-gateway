@@ -1,6 +1,12 @@
+import path from 'path';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@microservices/shared': path.resolve(__dirname, '../../shared/src'),
+    },
+  },
   test: {
     globals: false,
     environment: 'node',
