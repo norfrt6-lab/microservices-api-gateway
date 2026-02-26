@@ -28,7 +28,7 @@ RUN npm install --workspace=shared --workspace=services/user-service --omit=dev
 COPY --from=builder /app/shared/dist/ ./shared/dist/
 COPY --from=builder /app/services/user-service/dist/ ./services/user-service/dist/
 COPY --from=builder /app/services/user-service/prisma/ ./services/user-service/prisma/
-COPY --from=builder /app/services/user-service/node_modules/.prisma/ ./services/user-service/node_modules/.prisma/
+COPY --from=builder /app/services/user-service/generated/ ./services/user-service/generated/
 
 EXPOSE 3001
 
