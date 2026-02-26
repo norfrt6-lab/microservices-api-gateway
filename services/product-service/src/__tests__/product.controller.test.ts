@@ -20,6 +20,10 @@ function createMockRes() {
   return res;
 }
 
+function createMockNext() {
+  return vi.fn();
+}
+
 describe('product controller', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -34,20 +38,23 @@ describe('product controller', () => {
 
       const req = { body: { name: 'Widget', price: 29.99, stock: 10 } } as unknown as Request;
       const res = createMockRes();
+      const next = createMockNext();
 
-      await create(req, res);
+      await create(req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(201);
       expect(res.json).toHaveBeenCalledWith({ success: true, data: mockProduct });
+      expect(next).not.toHaveBeenCalled();
     });
 
     it('should return 400 on invalid body', async () => {
       const req = { body: { name: '', price: -1, stock: -5 } } as unknown as Request;
       const res = createMockRes();
+      const next = createMockNext();
 
-      await create(req, res);
+      await create(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(400);
+      expect(next).toHaveBeenCalledWith(expect.any(Error));
     });
   });
 
@@ -60,10 +67,12 @@ describe('product controller', () => {
 
       const req = { params: { id: '550e8400-e29b-41d4-a716-446655440000' } } as unknown as Request;
       const res = createMockRes();
+      const next = createMockNext();
 
-      await getById(req, res);
+      await getById(req, res, next);
 
       expect(res.json).toHaveBeenCalledWith({ success: true, data: mockProduct });
+      expect(next).not.toHaveBeenCalled();
     });
 
     it('should return 404 when product not found', async () => {
@@ -71,19 +80,21 @@ describe('product controller', () => {
 
       const req = { params: { id: '550e8400-e29b-41d4-a716-446655440000' } } as unknown as Request;
       const res = createMockRes();
+      const next = createMockNext();
 
-      await getById(req, res);
+      await getById(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(404);
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 404 }));
     });
 
     it('should return 400 on invalid ID format', async () => {
       const req = { params: { id: 'not-a-uuid' } } as unknown as Request;
       const res = createMockRes();
+      const next = createMockNext();
 
-      await getById(req, res);
+      await getById(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(400);
+      expect(next).toHaveBeenCalledWith(expect.any(Error));
     });
   });
 
@@ -94,14 +105,16 @@ describe('product controller', () => {
 
       const req = { query: {} } as unknown as Request;
       const res = createMockRes();
+      const next = createMockNext();
 
-      await list(req, res);
+      await list(req, res, next);
 
       expect(res.json).toHaveBeenCalledWith({
         success: true,
         data: [],
         meta: { page: 1, limit: 20, total: 0 },
       });
+      expect(next).not.toHaveBeenCalled();
     });
 
     it('should pass search parameter', async () => {
@@ -110,10 +123,12 @@ describe('product controller', () => {
 
       const req = { query: { search: 'widget' } } as unknown as Request;
       const res = createMockRes();
+      const next = createMockNext();
 
-      await list(req, res);
+      await list(req, res, next);
 
       expect(productService.listProducts).toHaveBeenCalledWith(1, 20, 'widget');
+      expect(next).not.toHaveBeenCalled();
     });
   });
 
@@ -130,8 +145,9 @@ describe('product controller', () => {
         headers: { 'x-expected-version': '1' },
       } as unknown as Request;
       const res = createMockRes();
+      const next = createMockNext();
 
-      await update(req, res);
+      await update(req, res, next);
 
       expect(productService.updateProduct).toHaveBeenCalledWith(
         '550e8400-e29b-41d4-a716-446655440000',
@@ -139,6 +155,7 @@ describe('product controller', () => {
         1,
       );
       expect(res.json).toHaveBeenCalledWith({ success: true, data: mockProduct });
+      expect(next).not.toHaveBeenCalled();
     });
 
     it('should return 409 on version conflict', async () => {
@@ -152,14 +169,11 @@ describe('product controller', () => {
         headers: { 'x-expected-version': '1' },
       } as unknown as Request;
       const res = createMockRes();
+      const next = createMockNext();
 
-      await update(req, res);
+      await update(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(409);
-      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-        success: false,
-        error: expect.objectContaining({ code: 'CONFLICT' }),
-      }));
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 409 }));
     });
 
     it('should return 404 when product not found', async () => {
@@ -171,10 +185,11 @@ describe('product controller', () => {
         headers: {},
       } as unknown as Request;
       const res = createMockRes();
+      const next = createMockNext();
 
-      await update(req, res);
+      await update(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(404);
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 404 }));
     });
   });
 
@@ -184,10 +199,12 @@ describe('product controller', () => {
 
       const req = { params: { id: '550e8400-e29b-41d4-a716-446655440000' } } as unknown as Request;
       const res = createMockRes();
+      const next = createMockNext();
 
-      await remove(req, res);
+      await remove(req, res, next);
 
       expect(res.json).toHaveBeenCalledWith({ success: true, data: { message: 'Product deleted' } });
+      expect(next).not.toHaveBeenCalled();
     });
 
     it('should return 404 when product not found', async () => {
@@ -195,10 +212,11 @@ describe('product controller', () => {
 
       const req = { params: { id: '550e8400-e29b-41d4-a716-446655440000' } } as unknown as Request;
       const res = createMockRes();
+      const next = createMockNext();
 
-      await remove(req, res);
+      await remove(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(404);
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 404 }));
     });
   });
 });

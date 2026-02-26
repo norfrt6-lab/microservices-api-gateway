@@ -136,6 +136,13 @@ chmod +x scripts/test-gateway.sh
 ./scripts/test-gateway.sh http://localhost:3000
 ```
 
+### Integration Tests (Docker Compose)
+
+```bash
+chmod +x scripts/integration-test.sh
+./scripts/integration-test.sh http://localhost:3000
+```
+
 ## API Reference
 
 ### Auth (User Service)
@@ -182,6 +189,9 @@ chmod +x scripts/test-gateway.sh
 | `PORT` | `3000` | Gateway port |
 | `NODE_ENV` | `development` | Environment |
 | `JWT_SECRET` | — | JWT signing secret |
+| `JWT_ISSUER` | — | Expected JWT issuer |
+| `JWT_AUDIENCE` | — | Expected JWT audience |
+| `TRUST_PROXY` | — | Express trust proxy setting (true/false/number) |
 | `GATEWAY_SECRET` | — | Internal gateway-to-service auth |
 | `REDIS_URL` | `redis://redis:6379` | Redis connection URL |
 | `NATS_URL` | `nats://nats:4222` | NATS connection URL |
@@ -189,6 +199,8 @@ chmod +x scripts/test-gateway.sh
 | `PRODUCT_SERVICE_URL` | `http://product-service:3002` | Product service URL |
 | `ORDER_SERVICE_URL` | `http://order-service:3003` | Order service URL |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://jaeger:4318` | OTel trace endpoint |
+| `OTEL_SERVICE_VERSION` | `1.0.0` | Service version for tracing |
+| `OTEL_TRACES_SAMPLER_RATIO` | `1` | Trace sampling ratio (0.0–1.0) |
 | `RATE_LIMIT_MAX_REQUESTS` | `100` | Rate limit per minute (anonymous) |
 | `RATE_LIMIT_AUTHENTICATED_MAX` | `500` | Rate limit per minute (authenticated) |
 
@@ -199,9 +211,10 @@ chmod +x scripts/test-gateway.sh
 | Message Broker | NATS | Lightweight, built-in request/reply, no external dependencies |
 | DB per Service | PostgreSQL (separate DBs) | True data isolation between services |
 | ORM | Prisma | Type-safe, great DX with TypeScript, auto migrations |
+| DB Constraints | Postgres CHECK constraints | Enforce price/stock/total invariants at DB level |
 | Auth | JWT (gateway-level) | Stateless, scalable, gateway handles verification |
 | Rate Limiting | Redis token-bucket (Lua) | Atomic, shared state across gateway instances |
-| Circuit Breaker | Custom implementation | Educational value, per-service tracking |
+| Circuit Breaker | Redis-backed implementation | Consistent state across gateway replicas |
 | Input Validation | Zod | Runtime + compile-time safety, composable schemas |
 | Tracing | OpenTelemetry + Jaeger | Vendor-neutral CNCF standard |
 | Metrics | Prometheus + Grafana | Industry standard, native K8s integration |
@@ -228,7 +241,7 @@ Available at `GET /metrics` on every service:
 - `circuit_breaker_state` — gauge per service (0=closed, 1=open, 2=half_open)
 - `nats_messages_total` — counter by subject and direction
 - `rate_limit_hits_total` — counter by tier
-- `cache_hits_total` / `cache_misses_total` — counters
+- `cache_hits_total` / `cache_misses_total` — counters (labeled by route)
 - `orders_created_total` / `users_registered_total` — business metrics
 
 ### Jaeger Tracing

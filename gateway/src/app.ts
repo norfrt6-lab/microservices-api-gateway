@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import './types/express';
 import { requestIdMiddleware } from './middleware/requestId';
+import { tracingMiddleware } from './middleware/tracing';
 import { httpLogger } from './middleware/logger';
 import { metricsMiddleware } from './middleware/metrics';
 import { errorHandler } from './middleware/errorHandler';
@@ -17,6 +18,8 @@ import { NotFoundError } from './utils/errors';
 import { config } from './config';
 
 const app = express();
+app.set('trust proxy', config.trustProxy);
+
 
 // Security headers (HSTS, X-Frame-Options, X-Content-Type-Options, CSP, etc.)
 app.use(
@@ -62,6 +65,9 @@ app.use(express.urlencoded({ extended: false, limit: '1mb' }));
 
 // Correlation ID (must be before logger)
 app.use(requestIdMiddleware);
+
+// Tracing context enrichment
+app.use(tracingMiddleware);
 
 // Structured logging
 app.use(httpLogger);

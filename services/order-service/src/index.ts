@@ -15,6 +15,7 @@ import {
 } from '@microservices/shared';
 import { orderRoutes } from './routes/order.routes';
 import * as orderService from './services/order.service';
+import { errorHandler } from './middleware/errorHandler';
 
 const logger = createLogger(SERVICES.ORDER);
 const app = express();
@@ -38,6 +39,7 @@ app.get('/metrics', async (_req, res) => {
 });
 
 app.use(orderRoutes);
+app.use(errorHandler);
 
 async function start() {
   try {

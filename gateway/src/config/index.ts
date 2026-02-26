@@ -5,6 +5,9 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   JWT_SECRET: z.string().min(1),
   JWT_EXPIRES_IN: z.string().default('24h'),
+  JWT_ISSUER: z.string().min(1).optional(),
+  JWT_AUDIENCE: z.string().min(1).optional(),
+  TRUST_PROXY: z.union([z.string(), z.coerce.number()]).default(''),
   GATEWAY_SECRET: z.string().min(1),
   API_VERSION: z.string().default('v1'),
   REDIS_URL: z.string().url().default('redis://redis:6379'),
@@ -17,6 +20,8 @@ const envSchema = z.object({
   ORDER_SERVICE_URL: z.string().url().default('http://order-service:3003'),
   OTEL_EXPORTER_OTLP_ENDPOINT: z.string().default('http://jaeger:4318'),
   OTEL_SERVICE_NAME: z.string().default('gateway'),
+  OTEL_SERVICE_VERSION: z.string().default('1.0.0'),
+  OTEL_TRACES_SAMPLER_RATIO: z.coerce.number().min(0).max(1).default(1),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -26,12 +31,25 @@ if (!parsed.success) {
   process.exit(1);
 }
 
+const trustProxy = (() => {
+  const value = parsed.data.TRUST_PROXY;
+  if (typeof value === 'number') return value;
+  if (value === '' || value === 'false') return false;
+  if (value === 'true') return true;
+  const asNumber = Number(value);
+  if (!Number.isNaN(asNumber)) return asNumber;
+  return value;
+})();
+
 export const config = {
   port: parsed.data.PORT,
   nodeEnv: parsed.data.NODE_ENV,
+  trustProxy,
   jwt: {
     secret: parsed.data.JWT_SECRET,
     expiresIn: parsed.data.JWT_EXPIRES_IN,
+    issuer: parsed.data.JWT_ISSUER,
+    audience: parsed.data.JWT_AUDIENCE,
   },
   gatewaySecret: parsed.data.GATEWAY_SECRET,
   apiVersion: parsed.data.API_VERSION,
@@ -54,5 +72,7 @@ export const config = {
   otel: {
     endpoint: parsed.data.OTEL_EXPORTER_OTLP_ENDPOINT,
     serviceName: parsed.data.OTEL_SERVICE_NAME,
+    serviceVersion: parsed.data.OTEL_SERVICE_VERSION,
+    samplerRatio: parsed.data.OTEL_TRACES_SAMPLER_RATIO,
   },
 };

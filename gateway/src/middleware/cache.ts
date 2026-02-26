@@ -50,7 +50,7 @@ export function cacheMiddleware(options: CacheOptions = {}) {
       const cached = await redis.get(key);
 
       if (cached) {
-        cacheHitsTotal.inc();
+        cacheHitsTotal.inc({ route: req.originalUrl.split('?')[0] });
         logger.debug({ correlationId: req.correlationId, key }, 'Cache hit');
 
         const parsed: { statusCode?: number; body: unknown } = JSON.parse(cached);
@@ -59,7 +59,7 @@ export function cacheMiddleware(options: CacheOptions = {}) {
         return res.status(parsed.statusCode || 200).json(parsed.body);
       }
 
-      cacheMissesTotal.inc();
+      cacheMissesTotal.inc({ route: req.originalUrl.split('?')[0] });
       logger.debug({ correlationId: req.correlationId, key }, 'Cache miss');
       res.setHeader('X-Cache', 'MISS');
 
