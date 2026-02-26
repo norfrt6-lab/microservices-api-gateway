@@ -9,6 +9,7 @@ export function requestIdMiddleware(req: Request, res: Response, next: NextFunct
 
   req.correlationId = correlationId;
   res.setHeader(HEADERS.CORRELATION_ID, correlationId);
+  res.locals.correlationId = correlationId;
 
   next();
 }

@@ -28,11 +28,17 @@ spec:
               value: "3000"
             - name: NODE_ENV
               value: production
+            - name: TRUST_PROXY
+              value: "true"
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:
                   name: microservices-secrets
                   key: JWT_SECRET
+            - name: JWT_ISSUER
+              value: "microservices-api-gateway"
+            - name: JWT_AUDIENCE
+              value: "microservices-api-gateway"
             - name: GATEWAY_SECRET
               valueFrom:
                 secretKeyRef:
@@ -52,6 +58,10 @@ spec:
               value: http://jaeger:4318
             - name: OTEL_SERVICE_NAME
               value: gateway
+            - name: OTEL_SERVICE_VERSION
+              value: "1.0.0"
+            - name: OTEL_TRACES_SAMPLER_RATIO
+              value: "1"
           resources:
             requests:
               cpu: 200m

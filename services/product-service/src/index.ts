@@ -17,6 +17,7 @@ import {
 } from '@microservices/shared';
 import { productRoutes } from './routes/product.routes';
 import * as productService from './services/product.service';
+import { errorHandler } from './middleware/errorHandler';
 
 const logger = createLogger(SERVICES.PRODUCT);
 const app = express();
@@ -40,6 +41,7 @@ app.get('/metrics', async (_req, res) => {
 });
 
 app.use(productRoutes);
+app.use(errorHandler);
 
 async function start() {
   try {

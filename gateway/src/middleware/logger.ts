@@ -6,6 +6,9 @@ export const httpLogger = pinoHttp({
   logger,
   customProps: (req) => ({
     correlationId: (req as GatewayRequest).correlationId,
+    userId: (req as GatewayRequest).user?.userId,
+    userEmail: (req as GatewayRequest).user?.email,
+    userRole: (req as GatewayRequest).user?.role,
   }),
   customLogLevel: (_req, res, err) => {
     if (res.statusCode >= 500 || err) return 'error';
@@ -24,6 +27,9 @@ export const httpLogger = pinoHttp({
       url: req.url,
       correlationId: (req as { raw?: { correlationId?: string } }).raw?.correlationId
         ?? (req as GatewayRequest).correlationId,
+      userId: (req as GatewayRequest).user?.userId,
+      userEmail: (req as GatewayRequest).user?.email,
+      userRole: (req as GatewayRequest).user?.role,
     }),
     res: (res) => ({
       statusCode: res.statusCode,

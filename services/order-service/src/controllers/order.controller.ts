@@ -1,13 +1,13 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { createOrderSchema } from '../schemas/order.schema';
-import { paginationSchema, idParamSchema, HEADERS } from '@microservices/shared';
+import { paginationSchema, idParamSchema, HEADERS, UnauthorizedError, NotFoundError, ConflictError } from '@microservices/shared';
 import * as orderService from '../services/order.service';
 
-export async function create(req: Request, res: Response) {
+export async function create(req: Request, res: Response, next: NextFunction) {
   try {
     const userId = req.headers['x-user-id'] as string;
     if (!userId) {
-      return res.status(401).json({ success: false, error: { code: 'UNAUTHORIZED', message: 'User ID required' } });
+      return next(new UnauthorizedError('User ID required'));
     }
 
     const data = createOrderSchema.parse(req.body);
@@ -15,88 +15,84 @@ export async function create(req: Request, res: Response) {
     const correlationId = req.headers[HEADERS.CORRELATION_ID] as string | undefined;
 
     const order = await orderService.createOrder(userId, data, idempotencyKey, correlationId);
-    res.status(201).json({ success: true, data: order });
+    return res.status(201).json({ success: true, data: order });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    if (message.includes('Insufficient stock') || message.includes('Failed to reserve')) {
-      return res.status(409).json({ success: false, error: { code: 'STOCK_UNAVAILABLE', message } });
+    if (err instanceof Error && (err.message.includes('Insufficient stock') || err.message.includes('Failed to reserve'))) {
+      return next(new ConflictError(err.message));
     }
-    res.status(400).json({ success: false, error: { code: 'BAD_REQUEST', message } });
+    return next(err as Error);
   }
 }
 
-export async function getById(req: Request, res: Response) {
+export async function getById(req: Request, res: Response, next: NextFunction) {
   try {
     const { id } = idParamSchema.parse(req.params);
     const userId = req.headers['x-user-id'] as string;
     const order = await orderService.getOrderById(id, userId);
-    res.json({ success: true, data: order });
+    return res.json({ success: true, data: order });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    if (message === 'Order not found') {
-      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message } });
+    if (err instanceof Error && err.message === 'Order not found') {
+      return next(new NotFoundError('Order not found'));
     }
-    res.status(400).json({ success: false, error: { code: 'BAD_REQUEST', message } });
+    return next(err as Error);
   }
 }
 
-export async function list(req: Request, res: Response) {
+export async function list(req: Request, res: Response, next: NextFunction) {
   try {
     const userId = req.headers['x-user-id'] as string;
     if (!userId) {
-      return res.status(401).json({ success: false, error: { code: 'UNAUTHORIZED', message: 'User ID required' } });
+      return next(new UnauthorizedError('User ID required'));
     }
 
     const { page, limit } = paginationSchema.parse(req.query);
     const result = await orderService.listOrders(userId, page, limit);
-    res.json({
+    return res.json({
       success: true,
       data: result.orders,
       meta: { page: result.page, limit: result.limit, total: result.total },
     });
-  } catch {
-    res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } });
+  } catch (err: unknown) {
+    return next(err as Error);
   }
 }
 
-export async function confirm(req: Request, res: Response) {
+export async function confirm(req: Request, res: Response, next: NextFunction) {
   try {
     const { id } = idParamSchema.parse(req.params);
     const userId = req.headers['x-user-id'] as string;
     const correlationId = req.headers[HEADERS.CORRELATION_ID] as string | undefined;
 
     if (!userId) {
-      return res.status(401).json({ success: false, error: { code: 'UNAUTHORIZED', message: 'User ID required' } });
+      return next(new UnauthorizedError('User ID required'));
     }
 
     const order = await orderService.confirmOrder(id, userId, correlationId);
-    res.json({ success: true, data: order });
+    return res.json({ success: true, data: order });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    if (message.includes('not found') || message.includes('cannot be confirmed')) {
-      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message } });
+    if (err instanceof Error && (err.message.includes('not found') || err.message.includes('cannot be confirmed'))) {
+      return next(new NotFoundError(err.message));
     }
-    res.status(400).json({ success: false, error: { code: 'BAD_REQUEST', message } });
+    return next(err as Error);
   }
 }
 
-export async function cancel(req: Request, res: Response) {
+export async function cancel(req: Request, res: Response, next: NextFunction) {
   try {
     const { id } = idParamSchema.parse(req.params);
     const userId = req.headers['x-user-id'] as string;
     const correlationId = req.headers[HEADERS.CORRELATION_ID] as string | undefined;
 
     if (!userId) {
-      return res.status(401).json({ success: false, error: { code: 'UNAUTHORIZED', message: 'User ID required' } });
+      return next(new UnauthorizedError('User ID required'));
     }
 
     const order = await orderService.cancelOrder(id, userId, correlationId);
-    res.json({ success: true, data: order });
+    return res.json({ success: true, data: order });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    if (message.includes('not found') || message.includes('cannot be cancelled')) {
-      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message } });
+    if (err instanceof Error && (err.message.includes('not found') || err.message.includes('cannot be cancelled'))) {
+      return next(new NotFoundError(err.message));
     }
-    res.status(400).json({ success: false, error: { code: 'BAD_REQUEST', message } });
+    return next(err as Error);
   }
 }

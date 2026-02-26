@@ -27,6 +27,10 @@ function createMockRes(): Pick<Response, 'status' | 'json'> {
   return res;
 }
 
+function createMockNext() {
+  return vi.fn();
+}
+
 const validUUID = '550e8400-e29b-41d4-a716-446655440000';
 
 describe('order controller', () => {
@@ -46,11 +50,13 @@ describe('order controller', () => {
         body: { items: [{ productId: validUUID, quantity: 2 }] },
       };
       const res = createMockRes();
+      const next = createMockNext();
 
-      await create(req, res);
+      await create(req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(201);
       expect(res.json).toHaveBeenCalledWith({ success: true, data: mockOrder });
+      expect(next).not.toHaveBeenCalled();
     });
 
     it('should return 401 when x-user-id header missing', async () => {
@@ -59,10 +65,11 @@ describe('order controller', () => {
         body: { items: [{ productId: validUUID, quantity: 1 }] },
       };
       const res = createMockRes();
+      const next = createMockNext();
 
-      await create(req, res);
+      await create(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(401);
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 401 }));
     });
 
     it('should return 409 on insufficient stock', async () => {
@@ -75,14 +82,11 @@ describe('order controller', () => {
         body: { items: [{ productId: validUUID, quantity: 1 }] },
       };
       const res = createMockRes();
+      const next = createMockNext();
 
-      await create(req, res);
+      await create(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(409);
-      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-        success: false,
-        error: expect.objectContaining({ code: 'STOCK_UNAVAILABLE' }),
-      }));
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 409 }));
     });
 
     it('should pass idempotency key from header', async () => {
@@ -95,8 +99,9 @@ describe('order controller', () => {
         body: { items: [{ productId: validUUID, quantity: 1 }] },
       };
       const res = createMockRes();
+      const next = createMockNext();
 
-      await create(req, res);
+      await create(req, res, next);
 
       expect(orderService.createOrder).toHaveBeenCalledWith(
         'user-1',
@@ -104,6 +109,7 @@ describe('order controller', () => {
         'idem-key-123',
         undefined,
       );
+      expect(next).not.toHaveBeenCalled();
     });
   });
 
@@ -119,10 +125,12 @@ describe('order controller', () => {
         headers: { 'x-user-id': 'user-1' },
       };
       const res = createMockRes();
+      const next = createMockNext();
 
-      await getById(req, res);
+      await getById(req, res, next);
 
       expect(res.json).toHaveBeenCalledWith({ success: true, data: mockOrder });
+      expect(next).not.toHaveBeenCalled();
     });
 
     it('should return 404 when order not found', async () => {
@@ -133,10 +141,11 @@ describe('order controller', () => {
         headers: { 'x-user-id': 'user-1' },
       };
       const res = createMockRes();
+      const next = createMockNext();
 
-      await getById(req, res);
+      await getById(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(404);
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 404 }));
     });
   });
 
@@ -147,23 +156,26 @@ describe('order controller', () => {
 
       const req: MockRequest = { headers: { 'x-user-id': 'user-1' }, query: {} };
       const res = createMockRes();
+      const next = createMockNext();
 
-      await list(req, res);
+      await list(req, res, next);
 
       expect(res.json).toHaveBeenCalledWith({
         success: true,
         data: [],
         meta: { page: 1, limit: 20, total: 0 },
       });
+      expect(next).not.toHaveBeenCalled();
     });
 
     it('should return 401 when x-user-id missing', async () => {
       const req: MockRequest = { headers: {}, query: {} };
       const res = createMockRes();
+      const next = createMockNext();
 
-      await list(req, res);
+      await list(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(401);
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 401 }));
     });
   });
 
@@ -179,10 +191,12 @@ describe('order controller', () => {
         headers: { 'x-user-id': 'user-1' },
       };
       const res = createMockRes();
+      const next = createMockNext();
 
-      await confirm(req, res);
+      await confirm(req, res, next);
 
       expect(res.json).toHaveBeenCalledWith({ success: true, data: mockOrder });
+      expect(next).not.toHaveBeenCalled();
     });
 
     it('should return 404 when order cannot be confirmed', async () => {
@@ -195,19 +209,21 @@ describe('order controller', () => {
         headers: { 'x-user-id': 'user-1' },
       };
       const res = createMockRes();
+      const next = createMockNext();
 
-      await confirm(req, res);
+      await confirm(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(404);
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 404 }));
     });
 
     it('should return 401 when x-user-id missing', async () => {
       const req: MockRequest = { params: { id: validUUID }, headers: {} };
       const res = createMockRes();
+      const next = createMockNext();
 
-      await confirm(req, res);
+      await confirm(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(401);
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 401 }));
     });
   });
 
@@ -223,10 +239,12 @@ describe('order controller', () => {
         headers: { 'x-user-id': 'user-1' },
       };
       const res = createMockRes();
+      const next = createMockNext();
 
-      await cancel(req, res);
+      await cancel(req, res, next);
 
       expect(res.json).toHaveBeenCalledWith({ success: true, data: mockOrder });
+      expect(next).not.toHaveBeenCalled();
     });
 
     it('should return 404 when order cannot be cancelled', async () => {
@@ -239,10 +257,11 @@ describe('order controller', () => {
         headers: { 'x-user-id': 'user-1' },
       };
       const res = createMockRes();
+      const next = createMockNext();
 
-      await cancel(req, res);
+      await cancel(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(404);
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 404 }));
     });
   });
 });

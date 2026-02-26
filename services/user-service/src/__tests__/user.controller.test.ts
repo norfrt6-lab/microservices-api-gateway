@@ -27,6 +27,10 @@ function createMockRes(): Pick<Response, 'status' | 'json'> {
   return res;
 }
 
+function createMockNext() {
+  return vi.fn();
+}
+
 describe('user controller', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -39,11 +43,13 @@ describe('user controller', () => {
 
       const req: MockRequest = { body: { email: 'test@test.com', password: 'password123', name: 'Test' } };
       const res = createMockRes();
+      const next = createMockNext();
 
-      await register(req, res);
+      await register(req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(201);
       expect(res.json).toHaveBeenCalledWith({ success: true, data: mockUser });
+      expect(next).not.toHaveBeenCalled();
     });
 
     it('should return 409 on duplicate email', async () => {
@@ -51,23 +57,21 @@ describe('user controller', () => {
 
       const req: MockRequest = { body: { email: 'test@test.com', password: 'password123', name: 'Test' } };
       const res = createMockRes();
+      const next = createMockNext();
 
-      await register(req, res);
+      await register(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(409);
-      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-        success: false,
-        error: expect.objectContaining({ code: 'CONFLICT' }),
-      }));
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 409 }));
     });
 
     it('should return 400 on validation error', async () => {
       const req: MockRequest = { body: { email: 'invalid', password: '123', name: '' } };
       const res = createMockRes();
+      const next = createMockNext();
 
-      await register(req, res);
+      await register(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(400);
+      expect(next).toHaveBeenCalledWith(expect.any(Error));
     });
   });
 
@@ -78,10 +82,12 @@ describe('user controller', () => {
 
       const req: MockRequest = { body: { email: 'test@test.com', password: 'password123' } };
       const res = createMockRes();
+      const next = createMockNext();
 
-      await login(req, res);
+      await login(req, res, next);
 
       expect(res.json).toHaveBeenCalledWith({ success: true, data: mockResult });
+      expect(next).not.toHaveBeenCalled();
     });
 
     it('should return 401 on invalid credentials', async () => {
@@ -89,14 +95,11 @@ describe('user controller', () => {
 
       const req: MockRequest = { body: { email: 'test@test.com', password: 'wrongpass' } };
       const res = createMockRes();
+      const next = createMockNext();
 
-      await login(req, res);
+      await login(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-        success: false,
-        error: expect.objectContaining({ code: 'UNAUTHORIZED' }),
-      }));
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 401 }));
     });
 
     it('should return 400 when JWT secret is missing', async () => {
@@ -104,14 +107,11 @@ describe('user controller', () => {
 
       const req: MockRequest = { body: { email: 'test@test.com', password: 'password123' } };
       const res = createMockRes();
+      const next = createMockNext();
 
-      await login(req, res);
+      await login(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-        success: false,
-        error: expect.objectContaining({ code: 'BAD_REQUEST' }),
-      }));
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 400 }));
     });
   });
 
@@ -122,20 +122,23 @@ describe('user controller', () => {
 
       const req: MockRequest = { headers: { 'x-user-id': 'user-1' } };
       const res = createMockRes();
+      const next = createMockNext();
 
-      await getProfile(req, res);
+      await getProfile(req, res, next);
 
       expect(userService.getUserById).toHaveBeenCalledWith('user-1');
       expect(res.json).toHaveBeenCalledWith({ success: true, data: mockUser });
+      expect(next).not.toHaveBeenCalled();
     });
 
     it('should return 401 when x-user-id header missing', async () => {
       const req: MockRequest = { headers: {} };
       const res = createMockRes();
+      const next = createMockNext();
 
-      await getProfile(req, res);
+      await getProfile(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(401);
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 401 }));
     });
 
     it('should return 404 when user not found', async () => {
@@ -143,10 +146,11 @@ describe('user controller', () => {
 
       const req: MockRequest = { headers: { 'x-user-id': 'nonexistent' } };
       const res = createMockRes();
+      const next = createMockNext();
 
-      await getProfile(req, res);
+      await getProfile(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(404);
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 404 }));
     });
   });
 
@@ -162,14 +166,16 @@ describe('user controller', () => {
 
       const req: MockRequest = { query: {} };
       const res = createMockRes();
+      const next = createMockNext();
 
-      await listUsers(req, res);
+      await listUsers(req, res, next);
 
       expect(res.json).toHaveBeenCalledWith({
         success: true,
         data: mockResult.users,
         meta: { page: 1, limit: 20, total: 1 },
       });
+      expect(next).not.toHaveBeenCalled();
     });
   });
 });
