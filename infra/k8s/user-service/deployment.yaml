@@ -47,10 +47,18 @@ spec:
                 secretKeyRef:
                   name: microservices-secrets
                   key: JWT_SECRET
+            - name: JWT_ISSUER
+              value: "microservices-api-gateway"
+            - name: JWT_AUDIENCE
+              value: "microservices-api-gateway"
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://jaeger:4318
             - name: OTEL_SERVICE_NAME
               value: user-service
+            - name: OTEL_SERVICE_VERSION
+              value: "1.0.0"
+            - name: OTEL_TRACES_SAMPLER_RATIO
+              value: "1"
           resources:
             requests:
               cpu: 100m

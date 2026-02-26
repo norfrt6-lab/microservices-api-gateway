@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import net from 'net';
 import { getRedisClient } from '../services/redis';
 import { config } from '../config';
 import { logger } from '../config/logger';
@@ -45,6 +46,32 @@ const TOKEN_BUCKET_SCRIPT = `
   end
 `;
 
+function getClientIp(req: Request): string {
+  if (req.ip && net.isIP(req.ip)) {
+    return req.ip;
+  }
+
+  const allowForwarded = config.trustProxy !== false;
+  const forwardedFor = allowForwarded
+    ? (req.headers['x-forwarded-for'] as string | undefined)?.split(',')[0]?.trim()
+    : undefined;
+
+  if (forwardedFor && net.isIP(forwardedFor)) {
+    return forwardedFor;
+  }
+
+  const socketIp = req.socket.remoteAddress;
+  if (socketIp && net.isIP(socketIp)) {
+    return socketIp;
+  }
+
+  logger.warn(
+    { correlationId: req.correlationId, ip: req.ip, forwardedFor, socketIp },
+    'Invalid client IP detected, falling back to unknown',
+  );
+  return 'unknown';
+}
+
 function getRateLimitKey(req: Request): { key: string; limit: number } {
   // Authenticated users get higher limits, keyed by userId
   if (req.user) {
@@ -54,8 +81,8 @@ function getRateLimitKey(req: Request): { key: string; limit: number } {
     };
   }
 
-  // Anonymous users keyed by IP
-  const ip = req.ip || req.socket.remoteAddress || 'unknown';
+  // Anonymous users keyed by validated IP
+  const ip = getClientIp(req);
   return {
     key: `ratelimit:ip:${ip}`,
     limit: config.rateLimit.maxRequests,

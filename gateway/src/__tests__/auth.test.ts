@@ -10,7 +10,12 @@ vi.mock('../config/logger', () => ({
 // Mock config
 vi.mock('../config', () => ({
   config: {
-    jwt: { secret: 'test-secret', expiresIn: '1h' },
+    jwt: {
+      secret: 'test-secret',
+      expiresIn: '1h',
+      issuer: 'test-issuer',
+      audience: 'test-audience',
+    },
   },
 }));
 
@@ -53,9 +58,27 @@ describe('authenticate middleware', () => {
     expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 401 }));
   });
 
+  it('should reject request with invalid issuer', () => {
+    const payload = { userId: 'user-1', email: 'test@test.com', role: UserRole.USER };
+    const token = jwt.sign(payload, 'test-secret', {
+      expiresIn: '1h',
+      issuer: 'wrong-issuer',
+      audience: 'test-audience',
+    });
+    const { req, res, next } = createMockReqRes(`Bearer ${token}`);
+
+    authenticate(req, res, next);
+
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 401 }));
+  });
+
   it('should accept request with valid JWT and attach user', () => {
     const payload = { userId: 'user-1', email: 'test@test.com', role: UserRole.USER };
-    const token = jwt.sign(payload, 'test-secret', { expiresIn: '1h' });
+    const token = jwt.sign(payload, 'test-secret', {
+      expiresIn: '1h',
+      issuer: 'test-issuer',
+      audience: 'test-audience',
+    });
     const { req, res, next } = createMockReqRes(`Bearer ${token}`);
 
     authenticate(req, res, next);
@@ -71,7 +94,7 @@ describe('authenticate middleware', () => {
     const token = jwt.sign(
       { userId: 'user-1', email: 'test@test.com', role: UserRole.USER },
       'test-secret',
-      { expiresIn: '0s' },
+      { expiresIn: '0s', issuer: 'test-issuer', audience: 'test-audience' },
     );
     const { req, res, next } = createMockReqRes(`Bearer ${token}`);
 
@@ -130,7 +153,11 @@ describe('optionalAuth middleware', () => {
 
   it('should attach user if valid token present', () => {
     const payload = { userId: 'user-1', email: 'test@test.com', role: UserRole.USER };
-    const token = jwt.sign(payload, 'test-secret', { expiresIn: '1h' });
+    const token = jwt.sign(payload, 'test-secret', {
+      expiresIn: '1h',
+      issuer: 'test-issuer',
+      audience: 'test-audience',
+    });
     const { req, res, next } = createMockReqRes(`Bearer ${token}`);
 
     optionalAuth(req, res, next);

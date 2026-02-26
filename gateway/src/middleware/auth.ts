@@ -21,7 +21,10 @@ export function authenticate(req: Request, _res: Response, next: NextFunction) {
   const token = authHeader.slice(7);
 
   try {
-    const decoded = jwt.verify(token, config.jwt.secret) as JwtPayload;
+    const decoded = jwt.verify(token, config.jwt.secret, {
+      issuer: config.jwt.issuer,
+      audience: config.jwt.audience,
+    }) as JwtPayload;
     req.user = decoded;
 
     logger.debug(
@@ -77,7 +80,10 @@ export function optionalAuth(req: Request, _res: Response, next: NextFunction) {
   const token = authHeader.slice(7);
 
   try {
-    const decoded = jwt.verify(token, config.jwt.secret) as JwtPayload;
+    const decoded = jwt.verify(token, config.jwt.secret, {
+      issuer: config.jwt.issuer,
+      audience: config.jwt.audience,
+    }) as JwtPayload;
     req.user = decoded;
   } catch {
     // Token invalid — proceed without user, don't error

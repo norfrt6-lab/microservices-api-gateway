@@ -54,6 +54,8 @@ router.get('/health', async (req: Request, res: Response) => {
     overallStatus = 'unhealthy';
   }
 
+  const circuitBreakers = await circuitBreaker.getStates();
+
   const health = {
     status: overallStatus,
     uptime: process.uptime(),
@@ -63,7 +65,7 @@ router.get('/health', async (req: Request, res: Response) => {
       redis: redisHealthy ? 'connected' : 'disconnected',
       nats: natsHealthy ? 'connected' : 'disconnected',
     },
-    circuitBreakers: circuitBreaker.getStates(),
+    circuitBreakers,
     serviceRegistry: getRegisteredServices(),
   };
 

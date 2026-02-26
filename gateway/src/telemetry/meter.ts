@@ -55,12 +55,14 @@ export const rateLimitHitsTotal = new client.Counter({
 export const cacheHitsTotal = new client.Counter({
   name: 'cache_hits_total',
   help: 'Total cache hits',
+  labelNames: ['route'] as const,
   registers: [register],
 });
 
 export const cacheMissesTotal = new client.Counter({
   name: 'cache_misses_total',
   help: 'Total cache misses',
+  labelNames: ['route'] as const,
   registers: [register],
 });
 

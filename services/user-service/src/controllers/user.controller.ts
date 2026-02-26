@@ -1,66 +1,71 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { registerSchema, loginSchema } from '../schemas/user.schema';
-import { paginationSchema } from '@microservices/shared';
+import {
+  paginationSchema,
+  ConflictError,
+  UnauthorizedError,
+  NotFoundError,
+  BadRequestError,
+} from '@microservices/shared';
 import * as userService from '../services/user.service';
 
-const getErrorMessage = (err: unknown) =>
-  err instanceof Error ? err.message : 'Unknown error';
 
-export async function register(req: Request, res: Response) {
+
+export async function register(req: Request, res: Response, next: NextFunction) {
   try {
     const data = registerSchema.parse(req.body);
     const user = await userService.createUser(data);
-    res.status(201).json({ success: true, data: user });
+    return res.status(201).json({ success: true, data: user });
   } catch (err: unknown) {
-    const message = getErrorMessage(err);
-    if (message === 'Email already registered') {
-      return res.status(409).json({ success: false, error: { code: 'CONFLICT', message } });
+    if (err instanceof Error && err.message === 'Email already registered') {
+      return next(new ConflictError('Email already registered'));
     }
-    res.status(400).json({ success: false, error: { code: 'BAD_REQUEST', message } });
+    return next(err as Error);
   }
 }
 
-export async function login(req: Request, res: Response) {
+export async function login(req: Request, res: Response, next: NextFunction) {
   try {
     const data = loginSchema.parse(req.body);
     const result = await userService.loginUser(data);
-    res.json({ success: true, data: result });
+    return res.json({ success: true, data: result });
   } catch (err: unknown) {
-    const message = getErrorMessage(err);
-    if (message === 'Invalid credentials') {
-      return res.status(401).json({ success: false, error: { code: 'UNAUTHORIZED', message } });
+    if (err instanceof Error && err.message === 'Invalid credentials') {
+      return next(new UnauthorizedError('Invalid credentials'));
     }
-    res.status(400).json({ success: false, error: { code: 'BAD_REQUEST', message } });
+    if (err instanceof Error && err.message === 'JWT secret not configured') {
+      return next(new BadRequestError('JWT secret not configured'));
+    }
+    return next(err as Error);
   }
 }
 
-export async function getProfile(req: Request, res: Response) {
+export async function getProfile(req: Request, res: Response, next: NextFunction) {
   try {
     const userId = req.headers['x-user-id'] as string;
     if (!userId) {
-      return res.status(401).json({ success: false, error: { code: 'UNAUTHORIZED', message: 'User ID not found' } });
+      return next(new UnauthorizedError('User ID not found'));
     }
     const user = await userService.getUserById(userId);
-    res.json({ success: true, data: user });
+    return res.json({ success: true, data: user });
   } catch (err: unknown) {
-    const message = getErrorMessage(err);
-    if (message === 'User not found') {
-      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message } });
+    if (err instanceof Error && err.message === 'User not found') {
+      return next(new NotFoundError('User not found'));
     }
-    res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } });
+    return next(err as Error);
   }
 }
 
-export async function listUsers(req: Request, res: Response) {
+export async function listUsers(req: Request, res: Response, next: NextFunction) {
   try {
     const { page, limit } = paginationSchema.parse(req.query);
     const result = await userService.listUsers(page, limit);
-    res.json({
+    return res.json({
       success: true,
       data: result.users,
       meta: { page: result.page, limit: result.limit, total: result.total },
     });
-  } catch {
-    res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } });
+  } catch (err: unknown) {
+    return next(err as Error);
   }
 }
