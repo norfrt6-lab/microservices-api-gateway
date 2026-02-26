@@ -44,9 +44,15 @@ export async function loginUser(data: LoginInput) {
 
   const signOptions: SignOptions = {
     expiresIn: (process.env.JWT_EXPIRES_IN || '24h') as SignOptions['expiresIn'],
-    issuer: process.env.JWT_ISSUER,
-    audience: process.env.JWT_AUDIENCE,
   };
+
+  if (process.env.JWT_ISSUER) {
+    signOptions.issuer = process.env.JWT_ISSUER;
+  }
+
+  if (process.env.JWT_AUDIENCE) {
+    signOptions.audience = process.env.JWT_AUDIENCE;
+  }
 
   const token = jwt.sign(
     { userId: user.id, email: user.email, role: user.role },

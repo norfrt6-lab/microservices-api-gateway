@@ -21,9 +21,7 @@ export function createProxyRouter(version: string): Router {
     const proxyOptions: Options = {
       target: route.target,
       changeOrigin: true,
-      pathRewrite: {
-        [`^/api/${version}${route.prefix}`]: route.prefix,
-      },
+      pathRewrite: (path) => `${route.prefix}${path}`,
       on: {
         proxyReq: (proxyReq, req) => {
           const expressReq = req as Request;
@@ -35,6 +33,14 @@ export function createProxyRouter(version: string): Router {
 
           // Inject gateway secret so services know request came from gateway
           proxyReq.setHeader(HEADERS.GATEWAY_SECRET, config.gatewaySecret);
+
+          // Forward JSON body to downstream service (for POST/PUT/PATCH)
+          if (expressReq.body && Object.keys(expressReq.body).length > 0) {
+            const bodyData = JSON.stringify(expressReq.body);
+            proxyReq.setHeader('Content-Type', 'application/json');
+            proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
+            proxyReq.write(bodyData);
+          }
 
           // Forward authenticated user info to downstream service
           if (expressReq.user) {
