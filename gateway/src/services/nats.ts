@@ -20,7 +20,10 @@ export async function connectNats(): Promise<NatsConnection> {
 
     // Track NATS messages via subscription callback
     const origPublish = connection.publish.bind(connection);
-    connection.publish = (subject: string, ...args: unknown[]) => {
+    connection.publish = (
+      subject: string,
+      ...args: Parameters<typeof origPublish> extends [string, ...infer Rest] ? Rest : never
+    ) => {
       natsMessagesTotal.inc({ subject, direction: 'outbound' });
       return origPublish(subject, ...args);
     };

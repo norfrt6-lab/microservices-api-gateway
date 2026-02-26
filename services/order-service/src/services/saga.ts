@@ -1,4 +1,4 @@
-import { PrismaClient, OrderStatus } from '@prisma/client';
+import { PrismaClient, OrderStatus } from '../../generated';
 import { natsRequest, natsPublish, retry, NATS_SUBJECTS } from '@microservices/shared';
 
 const prisma = new PrismaClient();

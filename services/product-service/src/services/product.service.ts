@@ -1,4 +1,4 @@
-import { PrismaClient, Prisma } from '@prisma/client';
+import { PrismaClient, Prisma } from '../../generated/prisma-client';
 import { CreateProductInput, UpdateProductInput } from '../schemas/product.schema';
 
 const prisma = new PrismaClient();

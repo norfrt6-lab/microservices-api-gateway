@@ -16,7 +16,8 @@
     "dev:user": "npm run dev --workspace=services/user-service",
     "dev:product": "npm run dev --workspace=services/product-service",
     "dev:order": "npm run dev --workspace=services/order-service",
-    "build": "npm run build --workspaces",
+    "db:generate": "prisma generate --schema services/user-service/prisma/schema.prisma && prisma generate --schema services/product-service/prisma/schema.prisma && prisma generate --schema services/order-service/prisma/schema.prisma",
+    "build": "npm run db:generate && tsc -b tsconfig.build.json",
     "lint": "npm run lint --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "seed": "tsx scripts/seed.ts"
@@ -28,5 +29,8 @@
     "@eslint/js": "^9.0.0",
     "eslint": "^9.0.0",
     "typescript-eslint": "^8.0.0"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0"
   }
 }
