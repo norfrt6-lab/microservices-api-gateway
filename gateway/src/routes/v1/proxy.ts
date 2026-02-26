@@ -92,7 +92,7 @@ export function createProxyRouter(version: string): Router {
     };
 
     // Build middleware chain: circuit breaker → auth (if required) → proxy
-    const middlewares: any[] = [];
+    const middlewares: Array<import('express').RequestHandler> = [];
 
     middlewares.push(circuitBreakerMiddleware(route.serviceName));
 

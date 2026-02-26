@@ -70,12 +70,12 @@ export function idempotencyMiddleware(req: Request, res: Response, next: NextFun
 
       let responseBody = '';
 
-      res.json = function (body: any) {
+      res.json = function (body: unknown) {
         responseBody = JSON.stringify(body);
         return originalJson(body);
       };
 
-      res.end = function (chunk?: any, ...args: any[]) {
+      res.end = function (chunk?: unknown, ...args: unknown[]) {
         if (chunk && !responseBody) {
           responseBody = typeof chunk === 'string' ? chunk : chunk.toString();
         }
@@ -96,7 +96,7 @@ export function idempotencyMiddleware(req: Request, res: Response, next: NextFun
         }
 
         return originalEnd(chunk, ...args);
-      } as any;
+      } as typeof res.end;
 
       next();
     })

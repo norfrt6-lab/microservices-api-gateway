@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import { ApiResponse } from '@microservices/shared';
+import { GatewayRequest } from '../types/express';
 
 export function sendSuccess<T>(
   res: Response,
@@ -12,7 +13,7 @@ export function sendSuccess<T>(
     data,
     meta: {
       ...meta,
-      correlationId: (res.req as any).correlationId,
+      correlationId: (res.req as GatewayRequest).correlationId,
     },
   };
   res.status(statusCode).json(response);
@@ -33,7 +34,7 @@ export function sendError(
       details,
     },
     meta: {
-      correlationId: (res.req as any).correlationId,
+      correlationId: (res.req as GatewayRequest).correlationId,
     },
   };
   res.status(statusCode).json(response);

@@ -53,7 +53,7 @@ export function cacheMiddleware(options: CacheOptions = {}) {
         cacheHitsTotal.inc();
         logger.debug({ correlationId: req.correlationId, key }, 'Cache hit');
 
-        const parsed = JSON.parse(cached);
+        const parsed: { statusCode?: number; body: unknown } = JSON.parse(cached);
         res.setHeader('X-Cache', 'HIT');
         res.setHeader('Cache-Control', `public, max-age=${ttl}`);
         return res.status(parsed.statusCode || 200).json(parsed.body);
@@ -65,7 +65,7 @@ export function cacheMiddleware(options: CacheOptions = {}) {
 
       // Intercept the response to cache it
       const originalJson = res.json.bind(res);
-      res.json = ((body: any) => {
+      res.json = ((body: unknown) => {
         // Only cache successful responses
         if (res.statusCode >= 200 && res.statusCode < 300) {
           const cacheEntry = JSON.stringify({
