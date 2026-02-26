@@ -62,6 +62,8 @@ jobs:
       - run: npm ci
       - name: Install bcrypt version
         run: npm install --workspace=services/user-service bcrypt@${{ matrix.bcrypt }} --no-save
+      - name: Build shared
+        run: npm run build --workspace=shared
       - name: Build user-service
         run: npm run build --workspace=services/user-service
       - name: Test user-service
