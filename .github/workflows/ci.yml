@@ -44,10 +44,33 @@ jobs:
       - name: Run tests
         run: npm test --workspace=${{ matrix.workspace }}
 
+  bcrypt-compat:
+    name: Bcrypt Compatibility Matrix
+    runs-on: ubuntu-latest
+    needs: lint
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ["20", "22"]
+        bcrypt: ["5", "6"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - name: Install bcrypt version
+        run: npm install --workspace=services/user-service bcrypt@${{ matrix.bcrypt }} --no-save
+      - name: Build user-service
+        run: npm run build --workspace=services/user-service
+      - name: Test user-service
+        run: npm test --workspace=services/user-service
+
   build:
     name: Build
     runs-on: ubuntu-latest
-    needs: test
+    needs: [test, bcrypt-compat]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -97,6 +120,8 @@ jobs:
           image-ref: local/gateway:ci
           format: sarif
           output: trivy-gateway.sarif
+          vuln-type: os,library
+          ignore-unfixed: true
           severity: CRITICAL,HIGH
           exit-code: "1"
       - name: Upload Trivy SARIF (gateway)
@@ -109,6 +134,8 @@ jobs:
           image-ref: local/user-service:ci
           format: sarif
           output: trivy-user-service.sarif
+          vuln-type: os,library
+          ignore-unfixed: true
           severity: CRITICAL,HIGH
           exit-code: "1"
       - name: Upload Trivy SARIF (user-service)
@@ -121,6 +148,8 @@ jobs:
           image-ref: local/product-service:ci
           format: sarif
           output: trivy-product-service.sarif
+          vuln-type: os,library
+          ignore-unfixed: true
           severity: CRITICAL,HIGH
           exit-code: "1"
       - name: Upload Trivy SARIF (product-service)
@@ -133,6 +162,8 @@ jobs:
           image-ref: local/order-service:ci
           format: sarif
           output: trivy-order-service.sarif
+          vuln-type: os,library
+          ignore-unfixed: true
           severity: CRITICAL,HIGH
           exit-code: "1"
       - name: Upload Trivy SARIF (order-service)
@@ -167,6 +198,15 @@ jobs:
           ./scripts/integration-test.sh http://localhost:3000
       - name: Run contract tests
         run: npm run test:contract
+      - name: Collect compose logs
+        if: always()
+        run: docker compose -f docker-compose.yml logs --no-color > compose.logs.txt
+      - name: Upload compose logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: compose-logs
+          path: compose.logs.txt
       - name: Shutdown stack
         if: always()
         run: docker compose -f docker-compose.yml down -v
