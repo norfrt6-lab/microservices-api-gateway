@@ -19,7 +19,7 @@ async function checkServiceHealth(name: string, url: string): Promise<ServiceHea
 
     if (res.ok) {
       const data = await res.json();
-      return { service: name, status: 'healthy', timestamp: new Date().toISOString(), details: data };
+      return { service: name, status: 'healthy', timestamp: new Date().toISOString(), details: data as Record<string, unknown> };
     }
     return { service: name, status: 'unhealthy', timestamp: new Date().toISOString(), details: { statusCode: res.status } };
   } catch (err) {

@@ -75,9 +75,15 @@ export function idempotencyMiddleware(req: Request, res: Response, next: NextFun
         return originalJson(body);
       };
 
-      res.end = function (chunk?: unknown, ...args: unknown[]) {
+      res.end = function (...args: Parameters<typeof originalEnd>) {
+        const [chunk] = args;
         if (chunk && !responseBody) {
-          responseBody = typeof chunk === 'string' ? chunk : chunk.toString();
+          responseBody =
+            typeof chunk === 'string'
+              ? chunk
+              : Buffer.isBuffer(chunk)
+                ? chunk.toString()
+                : String(chunk);
         }
 
         // Cache the response (only for successful or known responses)
@@ -95,7 +101,7 @@ export function idempotencyMiddleware(req: Request, res: Response, next: NextFun
           });
         }
 
-        return originalEnd(chunk, ...args);
+        return originalEnd(...args);
       } as typeof res.end;
 
       next();

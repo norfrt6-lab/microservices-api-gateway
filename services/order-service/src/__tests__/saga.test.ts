@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock Prisma
-vi.mock('@prisma/client', () => {
+vi.mock('../../generated', () => {
   const OrderStatus = {
     PENDING: 'PENDING',
     STOCK_RESERVED: 'STOCK_RESERVED',
@@ -41,7 +41,7 @@ vi.mock('@microservices/shared', () => ({
 import { runOrderCreationSaga } from '../services/saga';
 import { natsRequest, natsPublish } from '@microservices/shared';
 // @ts-expect-error accessing mock
-import { __mockPrisma } from '@prisma/client';
+import { __mockPrisma } from '../../generated';
 
 const mockPrisma = __mockPrisma;
 
@@ -64,9 +64,7 @@ describe('order creation saga', () => {
     const createdOrder = { id: 'ord-new', status: 'PENDING' };
     const finalOrder = { id: 'ord-new', status: 'CONFIRMED' };
 
-    mockPrisma.order.findUnique
-      .mockResolvedValueOnce(null) // idempotency check
-      .mockResolvedValueOnce(finalOrder); // final fetch
+    mockPrisma.order.findUnique.mockResolvedValueOnce(finalOrder);
     mockPrisma.order.create.mockResolvedValue(createdOrder);
     mockPrisma.order.update.mockResolvedValue({});
     vi.mocked(natsRequest).mockResolvedValue({ reserved: true });
