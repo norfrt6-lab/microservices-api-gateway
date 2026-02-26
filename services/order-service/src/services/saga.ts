@@ -80,7 +80,7 @@ export async function runOrderCreationSaga(
   const order = await prisma.order.create({
     data: {
       userId,
-      items: items as any,
+      items,
       total,
       status: OrderStatus.PENDING,
       sagaStep: 'CREATED',

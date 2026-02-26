@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { create, getById, list, update, remove } from '../controllers/product.controller';
+import type { Request, Response } from 'express';
 
 vi.mock('../services/product.service', () => ({
   createProduct: vi.fn(),
@@ -12,10 +13,10 @@ vi.mock('../services/product.service', () => ({
 import * as productService from '../services/product.service';
 
 function createMockRes() {
-  const res: any = {
+  const res = {
     status: vi.fn().mockReturnThis(),
     json: vi.fn().mockReturnThis(),
-  };
+  } as unknown as Pick<Response, 'status' | 'json'>;
   return res;
 }
 
@@ -27,9 +28,11 @@ describe('product controller', () => {
   describe('create', () => {
     it('should return 201 on successful creation', async () => {
       const mockProduct = { id: 'p1', name: 'Widget', price: 29.99, stock: 10 };
-      vi.mocked(productService.createProduct).mockResolvedValue(mockProduct as any);
+      vi.mocked(productService.createProduct).mockResolvedValue(
+        mockProduct as Awaited<ReturnType<typeof productService.createProduct>>,
+      );
 
-      const req: any = { body: { name: 'Widget', price: 29.99, stock: 10 } };
+      const req = { body: { name: 'Widget', price: 29.99, stock: 10 } } as unknown as Request;
       const res = createMockRes();
 
       await create(req, res);
@@ -39,7 +42,7 @@ describe('product controller', () => {
     });
 
     it('should return 400 on invalid body', async () => {
-      const req: any = { body: { name: '', price: -1, stock: -5 } };
+      const req = { body: { name: '', price: -1, stock: -5 } } as unknown as Request;
       const res = createMockRes();
 
       await create(req, res);
@@ -51,9 +54,11 @@ describe('product controller', () => {
   describe('getById', () => {
     it('should return product by ID', async () => {
       const mockProduct = { id: '550e8400-e29b-41d4-a716-446655440000', name: 'Widget' };
-      vi.mocked(productService.getProductById).mockResolvedValue(mockProduct as any);
+      vi.mocked(productService.getProductById).mockResolvedValue(
+        mockProduct as Awaited<ReturnType<typeof productService.getProductById>>,
+      );
 
-      const req: any = { params: { id: '550e8400-e29b-41d4-a716-446655440000' } };
+      const req = { params: { id: '550e8400-e29b-41d4-a716-446655440000' } } as unknown as Request;
       const res = createMockRes();
 
       await getById(req, res);
@@ -64,7 +69,7 @@ describe('product controller', () => {
     it('should return 404 when product not found', async () => {
       vi.mocked(productService.getProductById).mockRejectedValue(new Error('Product not found'));
 
-      const req: any = { params: { id: '550e8400-e29b-41d4-a716-446655440000' } };
+      const req = { params: { id: '550e8400-e29b-41d4-a716-446655440000' } } as unknown as Request;
       const res = createMockRes();
 
       await getById(req, res);
@@ -73,7 +78,7 @@ describe('product controller', () => {
     });
 
     it('should return 400 on invalid ID format', async () => {
-      const req: any = { params: { id: 'not-a-uuid' } };
+      const req = { params: { id: 'not-a-uuid' } } as unknown as Request;
       const res = createMockRes();
 
       await getById(req, res);
@@ -87,7 +92,7 @@ describe('product controller', () => {
       const mockResult = { products: [], total: 0, page: 1, limit: 20 };
       vi.mocked(productService.listProducts).mockResolvedValue(mockResult);
 
-      const req: any = { query: {} };
+      const req = { query: {} } as unknown as Request;
       const res = createMockRes();
 
       await list(req, res);
@@ -103,7 +108,7 @@ describe('product controller', () => {
       const mockResult = { products: [], total: 0, page: 1, limit: 20 };
       vi.mocked(productService.listProducts).mockResolvedValue(mockResult);
 
-      const req: any = { query: { search: 'widget' } };
+      const req = { query: { search: 'widget' } } as unknown as Request;
       const res = createMockRes();
 
       await list(req, res);
@@ -115,13 +120,15 @@ describe('product controller', () => {
   describe('update', () => {
     it('should return updated product', async () => {
       const mockProduct = { id: '550e8400-e29b-41d4-a716-446655440000', name: 'Updated', version: 2 };
-      vi.mocked(productService.updateProduct).mockResolvedValue(mockProduct as any);
+      vi.mocked(productService.updateProduct).mockResolvedValue(
+        mockProduct as Awaited<ReturnType<typeof productService.updateProduct>>,
+      );
 
-      const req: any = {
+      const req = {
         params: { id: '550e8400-e29b-41d4-a716-446655440000' },
         body: { name: 'Updated' },
         headers: { 'x-expected-version': '1' },
-      };
+      } as unknown as Request;
       const res = createMockRes();
 
       await update(req, res);
@@ -139,11 +146,11 @@ describe('product controller', () => {
         new Error('Version conflict — product was modified by another request'),
       );
 
-      const req: any = {
+      const req = {
         params: { id: '550e8400-e29b-41d4-a716-446655440000' },
         body: { name: 'Updated' },
         headers: { 'x-expected-version': '1' },
-      };
+      } as unknown as Request;
       const res = createMockRes();
 
       await update(req, res);
@@ -158,11 +165,11 @@ describe('product controller', () => {
     it('should return 404 when product not found', async () => {
       vi.mocked(productService.updateProduct).mockRejectedValue(new Error('Product not found'));
 
-      const req: any = {
+      const req = {
         params: { id: '550e8400-e29b-41d4-a716-446655440000' },
         body: { name: 'Updated' },
         headers: {},
-      };
+      } as unknown as Request;
       const res = createMockRes();
 
       await update(req, res);
@@ -175,7 +182,7 @@ describe('product controller', () => {
     it('should return success on delete', async () => {
       vi.mocked(productService.deleteProduct).mockResolvedValue(undefined);
 
-      const req: any = { params: { id: '550e8400-e29b-41d4-a716-446655440000' } };
+      const req = { params: { id: '550e8400-e29b-41d4-a716-446655440000' } } as unknown as Request;
       const res = createMockRes();
 
       await remove(req, res);
@@ -186,7 +193,7 @@ describe('product controller', () => {
     it('should return 404 when product not found', async () => {
       vi.mocked(productService.deleteProduct).mockRejectedValue(new Error('Product not found'));
 
-      const req: any = { params: { id: '550e8400-e29b-41d4-a716-446655440000' } };
+      const req = { params: { id: '550e8400-e29b-41d4-a716-446655440000' } } as unknown as Request;
       const res = createMockRes();
 
       await remove(req, res);

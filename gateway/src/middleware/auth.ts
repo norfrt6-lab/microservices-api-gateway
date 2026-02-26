@@ -5,13 +5,7 @@ import { config } from '../config';
 import { UnauthorizedError, ForbiddenError } from '../utils/errors';
 import { logger } from '../config/logger';
 
-declare global {
-  namespace Express {
-    interface Request {
-      user?: JwtPayload;
-    }
-  }
-}
+
 
 /**
  * Extracts and verifies JWT from Authorization header.

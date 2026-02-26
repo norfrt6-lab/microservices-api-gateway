@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { Request, Response } from 'express';
 import { create, getById, list, confirm, cancel } from '../controllers/order.controller';
 
 vi.mock('../services/order.service', () => ({
@@ -11,11 +12,18 @@ vi.mock('../services/order.service', () => ({
 
 import * as orderService from '../services/order.service';
 
-function createMockRes() {
-  const res: any = {
+type MockRequest = Partial<Request> & {
+  headers?: Record<string, string>;
+  params?: Record<string, string>;
+  query?: Record<string, unknown>;
+  body?: unknown;
+};
+
+function createMockRes(): Pick<Response, 'status' | 'json'> {
+  const res = {
     status: vi.fn().mockReturnThis(),
     json: vi.fn().mockReturnThis(),
-  };
+  } as Pick<Response, 'status' | 'json'>;
   return res;
 }
 
@@ -29,9 +37,11 @@ describe('order controller', () => {
   describe('create', () => {
     it('should return 201 on successful order creation', async () => {
       const mockOrder = { id: 'ord-1', userId: 'user-1', status: 'STOCK_RESERVED' };
-      vi.mocked(orderService.createOrder).mockResolvedValue(mockOrder as any);
+      vi.mocked(orderService.createOrder).mockResolvedValue(
+        mockOrder as Awaited<ReturnType<typeof orderService.createOrder>>,
+      );
 
-      const req: any = {
+      const req: MockRequest = {
         headers: { 'x-user-id': 'user-1' },
         body: { items: [{ productId: validUUID, quantity: 2 }] },
       };
@@ -44,7 +54,7 @@ describe('order controller', () => {
     });
 
     it('should return 401 when x-user-id header missing', async () => {
-      const req: any = {
+      const req: MockRequest = {
         headers: {},
         body: { items: [{ productId: validUUID, quantity: 1 }] },
       };
@@ -60,7 +70,7 @@ describe('order controller', () => {
         new Error('Insufficient stock for product p1'),
       );
 
-      const req: any = {
+      const req: MockRequest = {
         headers: { 'x-user-id': 'user-1' },
         body: { items: [{ productId: validUUID, quantity: 1 }] },
       };
@@ -76,9 +86,11 @@ describe('order controller', () => {
     });
 
     it('should pass idempotency key from header', async () => {
-      vi.mocked(orderService.createOrder).mockResolvedValue({ id: 'ord-1' } as any);
+      vi.mocked(orderService.createOrder).mockResolvedValue(
+        { id: 'ord-1' } as Awaited<ReturnType<typeof orderService.createOrder>>,
+      );
 
-      const req: any = {
+      const req: MockRequest = {
         headers: { 'x-user-id': 'user-1', 'idempotency-key': 'idem-key-123' },
         body: { items: [{ productId: validUUID, quantity: 1 }] },
       };
@@ -98,9 +110,11 @@ describe('order controller', () => {
   describe('getById', () => {
     it('should return order by ID', async () => {
       const mockOrder = { id: validUUID, userId: 'user-1', status: 'CONFIRMED' };
-      vi.mocked(orderService.getOrderById).mockResolvedValue(mockOrder as any);
+      vi.mocked(orderService.getOrderById).mockResolvedValue(
+        mockOrder as Awaited<ReturnType<typeof orderService.getOrderById>>,
+      );
 
-      const req: any = {
+      const req: MockRequest = {
         params: { id: validUUID },
         headers: { 'x-user-id': 'user-1' },
       };
@@ -114,7 +128,7 @@ describe('order controller', () => {
     it('should return 404 when order not found', async () => {
       vi.mocked(orderService.getOrderById).mockRejectedValue(new Error('Order not found'));
 
-      const req: any = {
+      const req: MockRequest = {
         params: { id: validUUID },
         headers: { 'x-user-id': 'user-1' },
       };
@@ -131,7 +145,7 @@ describe('order controller', () => {
       const mockResult = { orders: [], total: 0, page: 1, limit: 20 };
       vi.mocked(orderService.listOrders).mockResolvedValue(mockResult);
 
-      const req: any = { headers: { 'x-user-id': 'user-1' }, query: {} };
+      const req: MockRequest = { headers: { 'x-user-id': 'user-1' }, query: {} };
       const res = createMockRes();
 
       await list(req, res);
@@ -144,7 +158,7 @@ describe('order controller', () => {
     });
 
     it('should return 401 when x-user-id missing', async () => {
-      const req: any = { headers: {}, query: {} };
+      const req: MockRequest = { headers: {}, query: {} };
       const res = createMockRes();
 
       await list(req, res);
@@ -156,9 +170,11 @@ describe('order controller', () => {
   describe('confirm', () => {
     it('should confirm order successfully', async () => {
       const mockOrder = { id: validUUID, status: 'CONFIRMED' };
-      vi.mocked(orderService.confirmOrder).mockResolvedValue(mockOrder as any);
+      vi.mocked(orderService.confirmOrder).mockResolvedValue(
+        mockOrder as Awaited<ReturnType<typeof orderService.confirmOrder>>,
+      );
 
-      const req: any = {
+      const req: MockRequest = {
         params: { id: validUUID },
         headers: { 'x-user-id': 'user-1' },
       };
@@ -174,7 +190,7 @@ describe('order controller', () => {
         new Error('Order not found or cannot be confirmed'),
       );
 
-      const req: any = {
+      const req: MockRequest = {
         params: { id: validUUID },
         headers: { 'x-user-id': 'user-1' },
       };
@@ -186,7 +202,7 @@ describe('order controller', () => {
     });
 
     it('should return 401 when x-user-id missing', async () => {
-      const req: any = { params: { id: validUUID }, headers: {} };
+      const req: MockRequest = { params: { id: validUUID }, headers: {} };
       const res = createMockRes();
 
       await confirm(req, res);
@@ -198,9 +214,11 @@ describe('order controller', () => {
   describe('cancel', () => {
     it('should cancel order successfully', async () => {
       const mockOrder = { id: validUUID, status: 'CANCELLED' };
-      vi.mocked(orderService.cancelOrder).mockResolvedValue(mockOrder as any);
+      vi.mocked(orderService.cancelOrder).mockResolvedValue(
+        mockOrder as Awaited<ReturnType<typeof orderService.cancelOrder>>,
+      );
 
-      const req: any = {
+      const req: MockRequest = {
         params: { id: validUUID },
         headers: { 'x-user-id': 'user-1' },
       };
@@ -216,7 +234,7 @@ describe('order controller', () => {
         new Error('Order not found or cannot be cancelled'),
       );
 
-      const req: any = {
+      const req: MockRequest = {
         params: { id: validUUID },
         headers: { 'x-user-id': 'user-1' },
       };

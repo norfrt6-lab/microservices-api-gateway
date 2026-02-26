@@ -181,7 +181,7 @@ export function circuitBreakerMiddleware(serviceName: string) {
 
     // Intercept response to record success/failure
     const originalEnd = res.end.bind(res);
-    res.end = ((...args: any[]) => {
+    res.end = ((...args: unknown[]) => {
       if (res.statusCode >= 500) {
         circuitBreaker.recordFailure(serviceName);
       } else {

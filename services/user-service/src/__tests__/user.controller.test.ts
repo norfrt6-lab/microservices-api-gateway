@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { Request, Response } from 'express';
 import { register, login, getProfile, listUsers } from '../controllers/user.controller';
 
 // Mock the user service module
@@ -11,11 +12,18 @@ vi.mock('../services/user.service', () => ({
 
 import * as userService from '../services/user.service';
 
-function createMockRes() {
-  const res: any = {
+type MockRequest = Partial<Request> & {
+  headers?: Record<string, string>;
+  query?: Record<string, unknown>;
+  params?: Record<string, string>;
+  body?: unknown;
+};
+
+function createMockRes(): Pick<Response, 'status' | 'json'> {
+  const res = {
     status: vi.fn().mockReturnThis(),
     json: vi.fn().mockReturnThis(),
-  };
+  } as Pick<Response, 'status' | 'json'>;
   return res;
 }
 
@@ -29,7 +37,7 @@ describe('user controller', () => {
       const mockUser = { id: '1', email: 'test@test.com', name: 'Test', role: 'USER', createdAt: new Date() };
       vi.mocked(userService.createUser).mockResolvedValue(mockUser);
 
-      const req: any = { body: { email: 'test@test.com', password: 'password123', name: 'Test' } };
+      const req: MockRequest = { body: { email: 'test@test.com', password: 'password123', name: 'Test' } };
       const res = createMockRes();
 
       await register(req, res);
@@ -41,7 +49,7 @@ describe('user controller', () => {
     it('should return 409 on duplicate email', async () => {
       vi.mocked(userService.createUser).mockRejectedValue(new Error('Email already registered'));
 
-      const req: any = { body: { email: 'test@test.com', password: 'password123', name: 'Test' } };
+      const req: MockRequest = { body: { email: 'test@test.com', password: 'password123', name: 'Test' } };
       const res = createMockRes();
 
       await register(req, res);
@@ -54,7 +62,7 @@ describe('user controller', () => {
     });
 
     it('should return 400 on validation error', async () => {
-      const req: any = { body: { email: 'invalid', password: '123', name: '' } };
+      const req: MockRequest = { body: { email: 'invalid', password: '123', name: '' } };
       const res = createMockRes();
 
       await register(req, res);
@@ -68,7 +76,7 @@ describe('user controller', () => {
       const mockResult = { token: 'jwt-token', user: { id: '1', email: 'test@test.com', name: 'Test', role: 'USER' } };
       vi.mocked(userService.loginUser).mockResolvedValue(mockResult);
 
-      const req: any = { body: { email: 'test@test.com', password: 'password123' } };
+      const req: MockRequest = { body: { email: 'test@test.com', password: 'password123' } };
       const res = createMockRes();
 
       await login(req, res);
@@ -79,7 +87,7 @@ describe('user controller', () => {
     it('should return 401 on invalid credentials', async () => {
       vi.mocked(userService.loginUser).mockRejectedValue(new Error('Invalid credentials'));
 
-      const req: any = { body: { email: 'test@test.com', password: 'wrongpass' } };
+      const req: MockRequest = { body: { email: 'test@test.com', password: 'wrongpass' } };
       const res = createMockRes();
 
       await login(req, res);
@@ -94,7 +102,7 @@ describe('user controller', () => {
     it('should return 400 when JWT secret is missing', async () => {
       vi.mocked(userService.loginUser).mockRejectedValue(new Error('JWT secret not configured'));
 
-      const req: any = { body: { email: 'test@test.com', password: 'password123' } };
+      const req: MockRequest = { body: { email: 'test@test.com', password: 'password123' } };
       const res = createMockRes();
 
       await login(req, res);
@@ -112,7 +120,7 @@ describe('user controller', () => {
       const mockUser = { id: 'user-1', email: 'test@test.com', name: 'Test', role: 'USER', createdAt: new Date() };
       vi.mocked(userService.getUserById).mockResolvedValue(mockUser);
 
-      const req: any = { headers: { 'x-user-id': 'user-1' } };
+      const req: MockRequest = { headers: { 'x-user-id': 'user-1' } };
       const res = createMockRes();
 
       await getProfile(req, res);
@@ -122,7 +130,7 @@ describe('user controller', () => {
     });
 
     it('should return 401 when x-user-id header missing', async () => {
-      const req: any = { headers: {} };
+      const req: MockRequest = { headers: {} };
       const res = createMockRes();
 
       await getProfile(req, res);
@@ -133,7 +141,7 @@ describe('user controller', () => {
     it('should return 404 when user not found', async () => {
       vi.mocked(userService.getUserById).mockRejectedValue(new Error('User not found'));
 
-      const req: any = { headers: { 'x-user-id': 'nonexistent' } };
+      const req: MockRequest = { headers: { 'x-user-id': 'nonexistent' } };
       const res = createMockRes();
 
       await getProfile(req, res);
@@ -152,7 +160,7 @@ describe('user controller', () => {
       };
       vi.mocked(userService.listUsers).mockResolvedValue(mockResult);
 
-      const req: any = { query: {} };
+      const req: MockRequest = { query: {} };
       const res = createMockRes();
 
       await listUsers(req, res);

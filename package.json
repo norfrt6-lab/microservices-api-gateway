@@ -2,6 +2,7 @@
   "name": "microservices-api-gateway",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "Microservices API Gateway with service discovery, distributed tracing, and production-grade patterns",
   "workspaces": [
     "gateway",

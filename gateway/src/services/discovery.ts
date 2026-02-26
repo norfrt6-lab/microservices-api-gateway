@@ -1,5 +1,5 @@
 import { getNatsConnection } from './nats';
-import { NATS_SUBJECTS, SERVICES } from '@microservices/shared';
+import { NATS_SUBJECTS } from '@microservices/shared';
 import { jc } from '@microservices/shared';
 import { logger } from '../config/logger';
 

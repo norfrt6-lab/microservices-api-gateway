@@ -29,7 +29,7 @@ vi.mock('@prisma/client', () => {
 vi.mock('@microservices/shared', () => ({
   natsRequest: vi.fn(),
   natsPublish: vi.fn(),
-  retry: vi.fn((fn: () => Promise<any>) => fn()),
+  retry: vi.fn((fn: () => Promise<unknown>) => fn()),
   NATS_SUBJECTS: {
     PRODUCT_RESERVE_STOCK: 'product.reserveStock',
     PRODUCT_RELEASE_STOCK: 'product.releaseStock',
