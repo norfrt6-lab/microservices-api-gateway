@@ -20,8 +20,7 @@ RUN cd services/product-service && npx prisma generate
 
 FROM node:20-slim AS runner
 
-RUN apt-get update -y && apt-get install -y openssl wget && rm -rf /var/lib/apt/lists/* \
-  && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
+RUN apt-get update -y && apt-get install -y openssl wget && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -31,6 +30,7 @@ COPY --from=builder /app/shared/package.json ./shared/
 COPY --from=builder /app/services/product-service/package.json ./services/product-service/
 
 RUN npm ci --workspace=shared --workspace=services/product-service --omit=dev
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
 COPY --from=builder /app/shared/dist/ ./shared/dist/
 COPY --from=builder /app/services/product-service/dist/ ./services/product-service/dist/
