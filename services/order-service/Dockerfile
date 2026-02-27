@@ -26,7 +26,8 @@ WORKDIR /app
 
 RUN apt-get update -y \
     && apt-get install -y openssl ca-certificates wget \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/package-lock.json ./

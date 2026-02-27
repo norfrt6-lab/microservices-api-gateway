@@ -20,7 +20,8 @@ RUN cd services/product-service && npx prisma generate
 
 FROM node:20-slim AS runner
 
-RUN apt-get update -y && apt-get install -y openssl wget && rm -rf /var/lib/apt/lists/*
+RUN apt-get update -y && apt-get install -y openssl wget && rm -rf /var/lib/apt/lists/* \
+  && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
 WORKDIR /app
 

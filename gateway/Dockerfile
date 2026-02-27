@@ -27,6 +27,7 @@ COPY --from=builder /app/shared/package.json ./shared/
 COPY --from=builder /app/gateway/package.json ./gateway/
 
 RUN npm ci --workspace=shared --workspace=gateway --omit=dev
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
 COPY --from=builder /app/shared/dist/ ./shared/dist/
 COPY --from=builder /app/gateway/dist/ ./gateway/dist/

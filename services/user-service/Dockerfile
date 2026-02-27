@@ -29,7 +29,9 @@ COPY --from=builder /app/package-lock.json ./
 COPY --from=builder /app/shared/package.json ./shared/
 COPY --from=builder /app/services/user-service/package.json ./services/user-service/
 
-RUN npm ci --workspace=shared --workspace=services/user-service --omit=dev
+RUN npm ci --workspace=shared --workspace=services/user-service --omit=dev \
+    && rm -rf /usr/local/lib/node_modules/npm \
+    && rm -f /usr/local/bin/npm /usr/local/bin/npx
 
 COPY --from=builder /app/shared/dist/ ./shared/dist/
 COPY --from=builder /app/services/user-service/dist/ ./services/user-service/dist/
