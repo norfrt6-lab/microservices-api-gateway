@@ -130,6 +130,7 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: trivy-gateway.sarif
+          category: trivy-gateway
       - name: Container scan (user-service)
         uses: aquasecurity/trivy-action@0.24.0
         with:
@@ -144,6 +145,7 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: trivy-user-service.sarif
+          category: trivy-user-service
       - name: Container scan (product-service)
         uses: aquasecurity/trivy-action@0.24.0
         with:
@@ -158,6 +160,7 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: trivy-product-service.sarif
+          category: trivy-product-service
       - name: Container scan (order-service)
         uses: aquasecurity/trivy-action@0.24.0
         with:
@@ -172,6 +175,7 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: trivy-order-service.sarif
+          category: trivy-order-service
 
   integration:
     name: Integration (Docker Compose)
