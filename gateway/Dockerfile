@@ -1,4 +1,4 @@
-FROM node:20-alpine AS builder
+FROM node:20-bookworm-slim AS builder
 
 WORKDIR /app
 
@@ -15,9 +15,11 @@ COPY tsconfig.base.json ./
 
 RUN npm run build --workspace=shared && npm run build --workspace=gateway
 
-FROM node:20-alpine AS runner
+FROM node:20-bookworm-slim AS runner
 
 WORKDIR /app
+
+RUN apt-get update -y && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/package-lock.json ./
@@ -25,6 +27,7 @@ COPY --from=builder /app/shared/package.json ./shared/
 COPY --from=builder /app/gateway/package.json ./gateway/
 
 RUN npm ci --workspace=shared --workspace=gateway --omit=dev
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
 COPY --from=builder /app/shared/dist/ ./shared/dist/
 COPY --from=builder /app/gateway/dist/ ./gateway/dist/
