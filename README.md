@@ -140,6 +140,24 @@ chmod +x scripts/test-gateway.sh
 
 Run `chmod +x scripts/integration-test.sh` and then `./scripts/integration-test.sh http://localhost:3000`.
 
+Alternatively, use `make test-integration` to build the stack, run integration tests, and clean up in one command.
+
+If `make` is not available, use `npm run test:integration`.
+
+CI uploads Docker Compose logs as an artifact (`compose-logs`) for easier troubleshooting when integration fails.
+
+### Security Scanning (CI)
+
+CI runs SCA (`npm audit`), generates an SBOM (`sbom.spdx.json`), and performs container image scans (Trivy).
+
+Trivy scans are tuned to report `CRITICAL`/`HIGH` only, ignore unfixed issues, and include OS + library vulnerabilities.
+
+### Contract Tests (OpenAPI)
+
+Run `npm run test:contract` to validate the OpenAPI spec includes the expected routes and methods, and to validate response schemas for `GET /api/v1/products` and `GET /api/v1/orders`.
+
+CI also runs a bcrypt compatibility matrix for `services/user-service` across Node 20/22 and bcrypt 5/6.
+
 ### Prisma Migrations (per service)
 
 Each service manages its own Prisma migrations and database. To apply migrations locally, run:

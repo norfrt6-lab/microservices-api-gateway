@@ -8,6 +8,7 @@ export const NATS_SUBJECTS = {
   PRODUCT_CHECK_STOCK: 'product.checkStock',
   PRODUCT_RESERVE_STOCK: 'product.reserveStock',
   PRODUCT_RELEASE_STOCK: 'product.releaseStock',
+  PRODUCT_GET: 'product.get',
   PRODUCT_UPDATED: 'product.updated',
 
   // Order Service

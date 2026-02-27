@@ -20,6 +20,8 @@
     "build": "npm run db:generate && tsc -b tsconfig.build.json",
     "lint": "npm run lint --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
+    "test:integration": "node scripts/test-integration.cjs",
+    "test:contract": "node scripts/contract-test.cjs",
     "seed": "tsx scripts/seed.ts"
   },
   "engines": {

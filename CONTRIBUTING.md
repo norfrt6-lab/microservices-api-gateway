@@ -54,6 +54,22 @@ npm test --workspace=shared
 npx vitest run --coverage --workspace=gateway
 ```
 
+```bash
+# Integration tests (Docker Compose)
+make test-integration
+
+# If make is not available
+npm run test:integration
+```
+
+### Security Scanning (CI)
+
+CI runs SCA (`npm audit`), generates an SBOM (`sbom.spdx.json`), and performs container image scans (Trivy).
+
+### Contract Tests (OpenAPI)
+
+Run `npm run test:contract` to validate the OpenAPI spec includes the expected routes and methods.
+
 ## Code Style
 
 - TypeScript strict mode

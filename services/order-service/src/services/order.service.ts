@@ -62,7 +62,7 @@ export async function createOrder(
 
   for (const item of data.items) {
     const product = await natsRequest<{ productId: string }, ProductInfo>(
-      'product.get',
+      NATS_SUBJECTS.PRODUCT_GET,
       { productId: item.productId },
       correlationId,
     ).catch(() => null);
@@ -124,7 +124,7 @@ export async function listOrders(userId: string, page: number, limit: number) {
 
 export async function confirmOrder(id: string, userId: string, correlationId?: string) {
   const order = await prisma.order.findFirst({
-    where: { id, userId, status: OrderStatus.STOCK_RESERVED },
+    where: { id, userId, status: { in: [OrderStatus.PENDING, OrderStatus.STOCK_RESERVED] } },
   });
 
   if (!order) throw new Error('Order not found or cannot be confirmed');
@@ -145,7 +145,7 @@ export async function confirmOrder(id: string, userId: string, correlationId?: s
 
 export async function cancelOrder(id: string, userId: string, correlationId?: string) {
   const order = await prisma.order.findFirst({
-    where: { id, userId, status: { in: [OrderStatus.PENDING, OrderStatus.STOCK_RESERVED] } },
+    where: { id, userId, status: { in: [OrderStatus.PENDING, OrderStatus.STOCK_RESERVED, OrderStatus.CONFIRMED] } },
   });
 
   if (!order) throw new Error('Order not found or cannot be cancelled');
